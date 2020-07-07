@@ -1,5 +1,5 @@
 #include "util.h"
-#include "../../include/general_util/generic_inline_util.h"
+#include "generic_inline_util.h"
 
 
 

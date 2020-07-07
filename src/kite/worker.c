@@ -1,8 +1,8 @@
 #include "util.h"
-#include "../../include/kite_inline_util/kite_inline_util.h"
-#include "../../include/general_util/init_connect.h"
-#include "../../include/general_util/trace_util.h"
-#include "../../include/general_util/rdma_gen_util.h"
+#include "kite_inline_util.h"
+#include "init_connect.h"
+#include "trace_util.h"
+#include "rdma_gen_util.h"
 
 void *worker(void *arg)
 {
