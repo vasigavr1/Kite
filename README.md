@@ -1,5 +1,7 @@
-# Kite
+#Note:
+This is a submodule part of the [Odyssey](https://github.com/vasigavr1/Odyssey) project. Please refer to the odyssey project for execution scripts. CMakeLists.txt is not maintained. Please use the CMakeLists.txt found in vasigavr1/odyssey to compile.
 
+# Kite
 Kite is a replicated, RDMA-enabled Key-Value Store that enforces available Release Consistency.
 Kite implements a read/write/RMW API an uses:
 1. Eventual Store for relaxed reads  & writes
@@ -34,7 +36,7 @@ Kite API contains two flavours (a blocking and a nonblocking) of the following c
 6. CAS_weak()
 7. FAA()
 
-The Kite API can be used by the client threads. 
+The Kite API can be used by the client threads.
 ./src/client.c already contains implementations of
 * The Treiber Stack
 * Michael & Scott Queues
@@ -70,17 +72,15 @@ RDMA capable NICs and Infiniband switch
 4. echo 10000000001 | tee /proc/sys/kernel/shmmax /proc/sys/kernel/shmall > /dev/null
  * Make sure that the changes have been applied using cat on the above files
  * The above changes are temporary (i.e. need to be performed after a reboot)
- 
+
 ## How to run Kite
 In kite/src/kite there is a script "run-kite.sh"
 To run Kite:
 1. Modify the script to contain the ip-addresses of the machines that will run Kite
-2. Run the script in all machines. 
+2. Run the script in all machines.
 
 The script bin/copy-kite-executables.sh  can be used to compile in one machine and then copy the executable in the rest of the machines. (The machines must be specified within the script).
 
 ## Tested on
 * Infiniband cluster of 5 inter-connected nodes, via a Mellanox MSX6012F-BS switch, each one equiped with a single-port 56Gb Infiniband NIC (Mellanox MCX455A-FCAT PCIe-gen3 x16).
-* OS: Ubuntu 18.04.1 LTS (Kernel: 4.15.0-55-generic) 
-
-
+* OS: Ubuntu 18.04.1 LTS (Kernel: 4.15.0-55-generic)
