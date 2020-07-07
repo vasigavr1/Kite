@@ -1,4 +1,4 @@
-#Note:
+# Note:
 This is a submodule part of the [Odyssey](https://github.com/vasigavr1/Odyssey) project. Please refer to the odyssey project for execution scripts. CMakeLists.txt is not maintained. Please use the CMakeLists.txt found in vasigavr1/odyssey to compile.
 
 # Kite
