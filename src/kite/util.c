@@ -1,3 +1,4 @@
+#include <rdma_gen_util.h>
 #include "util.h"
 #include "generic_inline_util.h"
 
@@ -209,8 +210,9 @@ void dump_stats_2_file(struct stats* st){
 
 
 
+
 /* ---------------------------------------------------------------------------
-------------------------------DRF--------------------------------------
+------------------------------KITE WORKER --------------------------------------
 ---------------------------------------------------------------------------*/
 // set the different queue depths for the queue pairs
 void set_up_queue_depths(int** recv_q_depths, int** send_q_depths)
@@ -225,9 +227,9 @@ void set_up_queue_depths(int** recv_q_depths, int** send_q_depths)
   *send_q_depths = malloc(QP_NUM * sizeof(int));
   *recv_q_depths = malloc(QP_NUM * sizeof(int));
   //RECV
-  (*recv_q_depths)[R_QP_ID] = ENABLE_MULTICAST == 1? 1 : RECV_R_Q_DEPTH;
-  (*recv_q_depths)[R_REP_QP_ID] = ENABLE_MULTICAST == 1? 1 : RECV_R_REP_Q_DEPTH;
-  (*recv_q_depths)[W_QP_ID] = RECV_W_Q_DEPTH;
+  (*recv_q_depths)[R_QP_ID] = ENABLE_MULTICAST ? 1 : RECV_R_Q_DEPTH;
+  (*recv_q_depths)[R_REP_QP_ID] = RECV_R_REP_Q_DEPTH;
+  (*recv_q_depths)[W_QP_ID] = RECV_W_Q_DEPTH; //ENABLE_MULTICAST ? 1 : RECV_W_Q_DEPTH;
   (*recv_q_depths)[ACK_QP_ID] = RECV_ACK_Q_DEPTH;
   //SEND
   (*send_q_depths)[R_QP_ID] = SEND_R_Q_DEPTH;
@@ -237,9 +239,6 @@ void set_up_queue_depths(int** recv_q_depths, int** send_q_depths)
 
 }
 
-/* ---------------------------------------------------------------------------
-------------------------------DRF WORKER --------------------------------------
----------------------------------------------------------------------------*/
 
 
 // Initialize the quorum info that contains the system configuration
@@ -323,7 +322,7 @@ p_ops_t* set_up_pending_ops(uint32_t pending_writes,
 
 
   // PREP STRUCT
-  p_ops->prop_info = (struct prop_info *) aligned_alloc(64, sizeof(struct prop_info));
+  p_ops->prop_info = (struct prop_info *)malloc(sizeof(struct prop_info));
   memset(p_ops->prop_info, 0, sizeof(struct prop_info));
   assert(IS_ALIGNED(p_ops->prop_info, 64));
   for (i = 0; i < LOCAL_PROP_NUM; i++) {
@@ -397,18 +396,19 @@ p_ops_t* set_up_pending_ops(uint32_t pending_writes,
 
 // Set up the memory registrations required
 void set_up_mr(struct ibv_mr **mr, void *buf, uint8_t enable_inlining, uint32_t buffer_size,
-                    struct hrd_ctrl_blk *cb)
+                    hrd_ctrl_blk_t *cb)
 {
   if (!enable_inlining)
     *mr = register_buffer(cb->pd, buf, buffer_size);
 }
 
 
+
 // Set up all Broadcast WRs
 void set_up_bcast_WRs(struct ibv_send_wr *w_send_wr, struct ibv_sge *w_send_sgl,
                       struct ibv_send_wr *r_send_wr, struct ibv_sge *r_send_sgl,
-                      uint16_t remote_thread,  struct hrd_ctrl_blk *cb,
-                      struct ibv_mr *w_mr, struct ibv_mr *r_mr)
+                      uint16_t remote_thread,  hrd_ctrl_blk_t *cb,
+                      struct ibv_mr *w_mr, struct ibv_mr *r_mr, mcast_cb_t* mcast_cb)
 {
   uint16_t i, j;
   for (j = 0; j < MAX_BCAST_BATCH; j++) { // Number of Broadcasts
@@ -421,24 +421,13 @@ void set_up_bcast_WRs(struct ibv_send_wr *w_send_wr, struct ibv_sge *w_send_sgl,
       else rm_id = (uint16_t) ((i + 1) % MACHINE_NUM);
       uint16_t index = (uint16_t) ((j * MESSAGES_IN_BCAST) + i);
       assert (index < MESSAGES_IN_BCAST_BATCH);
-      w_send_wr[index].wr.ud.ah = rem_qp[rm_id][remote_thread][W_QP_ID].ah;
-      w_send_wr[index].wr.ud.remote_qpn = (uint32) rem_qp[rm_id][remote_thread][W_QP_ID].qpn;
-      w_send_wr[index].wr.ud.remote_qkey = HRD_DEFAULT_QKEY;
-      r_send_wr[index].wr.ud.ah = rem_qp[rm_id][remote_thread][R_QP_ID].ah;
-      r_send_wr[index].wr.ud.remote_qpn = (uint32) rem_qp[rm_id][remote_thread][R_QP_ID].qpn;
-      r_send_wr[index].wr.ud.remote_qkey = HRD_DEFAULT_QKEY;
-      w_send_wr[index].opcode = IBV_WR_SEND;
-      w_send_wr[index].num_sge = 1;
-      w_send_wr[index].sg_list = &w_send_sgl[j];
-      r_send_wr[index].opcode = IBV_WR_SEND;
-      r_send_wr[index].num_sge = 1;
-      r_send_wr[index].sg_list = &r_send_sgl[j];
-      if (W_ENABLE_INLINING == 1) w_send_wr[index].send_flags = IBV_SEND_INLINE;
-      else w_send_wr[index].send_flags = 0;
-      if (R_ENABLE_INLINING == 1) r_send_wr[index].send_flags = IBV_SEND_INLINE;
-      else r_send_wr[index].send_flags = 0;
-      w_send_wr[index].next = (i == MESSAGES_IN_BCAST - 1) ? NULL : &w_send_wr[index + 1];
-      r_send_wr[index].next = (i == MESSAGES_IN_BCAST - 1) ? NULL : &r_send_wr[index + 1];
+      bool last = (i == MESSAGES_IN_BCAST - 1);
+      set_up_wr(&w_send_wr[index], &w_send_sgl[j], W_ENABLE_INLINING,
+                last, rm_id, remote_thread, W_QP_ID,
+                false, mcast_cb, W_MCAST_QP);
+      set_up_wr(&r_send_wr[index], &r_send_sgl[j], R_ENABLE_INLINING,
+                last, rm_id, remote_thread, R_QP_ID,
+                ENABLE_MULTICAST, mcast_cb, R_MCAST_QP);
     }
   }
 }
@@ -446,7 +435,7 @@ void set_up_bcast_WRs(struct ibv_send_wr *w_send_wr, struct ibv_sge *w_send_sgl,
 // Set up the r_rep replies and acks send and recv wrs
 void set_up_ack_n_r_rep_WRs(struct ibv_send_wr *ack_send_wr, struct ibv_sge *ack_send_sgl,
                             struct ibv_send_wr *r_rep_send_wr, struct ibv_sge *r_rep_send_sgl,
-                            struct hrd_ctrl_blk *cb, struct ibv_mr *r_rep_mr,
+                            hrd_ctrl_blk_t *cb, struct ibv_mr *r_rep_mr,
                             ack_mes_t *acks, uint16_t remote_thread) {
   uint16_t i;
   // ACKS

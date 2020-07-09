@@ -1,6 +1,7 @@
 #ifndef KITE_UTILS_H
 #define KITE_UTILS_H
 
+#include <init_connect.h>
 #include "kvs.h"
 #include "hrd.h"
 #include "main.h"
@@ -68,15 +69,16 @@ p_ops_t* set_up_pending_ops(uint32_t pending_writes,
 // Set up the memory registrations in case inlining is disabled
 // Set up the memory registrations required
 void set_up_mr(struct ibv_mr **mr, void *buf, uint8_t enable_inlining, uint32_t buffer_size,
-               struct hrd_ctrl_blk *cb);
+               hrd_ctrl_blk_t *cb);
 // Set up all Broadcast WRs
 void set_up_bcast_WRs(struct ibv_send_wr*, struct ibv_sge*,
                       struct ibv_send_wr*, struct ibv_sge*, uint16_t,
-                      struct hrd_ctrl_blk*, struct ibv_mr*, struct ibv_mr*);
+                      hrd_ctrl_blk_t*, struct ibv_mr*, struct ibv_mr*,
+											mcast_cb_t* );
 // Set up the r_rep replies and acks send and recv wrs
 void set_up_ack_n_r_rep_WRs(struct ibv_send_wr*, struct ibv_sge*,
                             struct ibv_send_wr*, struct ibv_sge*,
-                            struct hrd_ctrl_blk*, struct ibv_mr*,
+                            hrd_ctrl_blk_t*, struct ibv_mr*,
                             ack_mes_t*, uint16_t);
 
 
@@ -97,6 +99,16 @@ void randomize_op_values(trace_op_t *ops, uint16_t t_id);
 ---------------------------------------------------------------------------*/
 void print_latency_stats(void);
 
+
+static mcast_cb_t* kite_init_multicast(hrd_ctrl_blk_t *cb, uint16_t t_id)
+{
+  uint32_t *recv_q_depth = (uint32_t *) malloc(MCAST_QP_NUM * sizeof(uint32_t));
+  recv_q_depth[0] = RECV_R_Q_DEPTH;
+
+	return create_mcast_cb(MCAST_GROUPS_NUM, MCAST_QP_NUM,
+												 MACHINE_NUM, recv_q_depth, (void *) cb->dgram_buf,
+												 (size_t) TOTAL_BUF_SIZE, t_id);
+}
 
 
 #endif /* KITE_UTILS_H */

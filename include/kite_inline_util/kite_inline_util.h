@@ -223,7 +223,7 @@ static inline void inspect_rmws(p_ops_t *p_ops, uint16_t t_id)
 //---------------------------------------------------------------------------*/
 // Broadcast Writes
 static inline void broadcast_writes(p_ops_t *p_ops,
-                                    uint16_t credits[][MACHINE_NUM], struct hrd_ctrl_blk *cb,
+                                    uint16_t credits[][MACHINE_NUM], hrd_ctrl_blk_t *cb,
                                     uint32_t *release_rdy_dbg_cnt, uint32_t *time_out_cnt,
                                     struct ibv_sge *w_send_sgl, struct ibv_send_wr *r_send_wr,
                                     struct ibv_send_wr *w_send_wr,
@@ -288,7 +288,7 @@ static inline void broadcast_writes(p_ops_t *p_ops,
 
 // Broadcast Reads
 static inline void broadcast_reads(p_ops_t *p_ops,
-                                   uint16_t credits[][MACHINE_NUM], struct hrd_ctrl_blk *cb,
+                                   uint16_t credits[][MACHINE_NUM], hrd_ctrl_blk_t *cb,
                                    uint32_t *credit_debug_cnt,
                                    uint32_t *time_out_cnt,
                                    struct ibv_sge *r_send_sgl, struct ibv_send_wr *r_send_wr,
@@ -343,7 +343,7 @@ static inline void broadcast_reads(p_ops_t *p_ops,
 //---------------------------------------------------------------------------*/
 
 // Send Read Replies
-static inline void send_r_reps(p_ops_t *p_ops, struct hrd_ctrl_blk *cb,
+static inline void send_r_reps(p_ops_t *p_ops, hrd_ctrl_blk_t *cb,
                                struct ibv_send_wr *r_rep_send_wr, struct ibv_sge *r_rep_send_sgl,
                                recv_info_t *r_recv_info, recv_info_t *w_recv_info,
                                uint64_t *r_rep_tx,  uint16_t t_id)
@@ -390,7 +390,7 @@ static inline void send_r_reps(p_ops_t *p_ops, struct hrd_ctrl_blk *cb,
 // Send a batched ack that denotes the first local write id and the number of subsequent lids that are being acked
 static inline void send_acks(struct ibv_send_wr *ack_send_wr,
                              uint64_t *sent_ack_tx,
-                             struct hrd_ctrl_blk *cb, recv_info_t *w_recv_info,
+                             hrd_ctrl_blk_t *cb, recv_info_t *w_recv_info,
                              ack_mes_t *acks, uint16_t t_id)
 {
   uint8_t ack_i = 0, prev_ack_i = 0, first_wr = 0;

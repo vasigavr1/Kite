@@ -46,7 +46,7 @@ static inline int find_how_many_write_messages_can_be_polled(struct ibv_cq *w_re
 
 // Form the  work request for the read reply
 static inline void forge_r_rep_wr(uint32_t r_rep_pull_ptr, uint16_t mes_i, p_ops_t *p_ops,
-                                  struct hrd_ctrl_blk *cb, struct ibv_sge *send_sgl,
+                                  hrd_ctrl_blk_t *cb, struct ibv_sge *send_sgl,
                                   struct ibv_send_wr *send_wr, uint64_t *r_rep_tx,
                                   uint16_t t_id) {
 
@@ -73,7 +73,7 @@ static inline void forge_r_rep_wr(uint32_t r_rep_pull_ptr, uint16_t mes_i, p_ops
 // Form the Broadcast work request for the red
 static inline void forge_r_wr(uint32_t r_mes_i, p_ops_t *p_ops,
                               quorum_info_t *q_info,
-                              struct hrd_ctrl_blk *cb, struct ibv_sge *send_sgl,
+                              hrd_ctrl_blk_t *cb, struct ibv_sge *send_sgl,
                               struct ibv_send_wr *send_wr, uint64_t *r_br_tx,
                               uint16_t br_i, uint16_t credits[][MACHINE_NUM],
                               uint8_t vc, uint16_t t_id) {
@@ -126,7 +126,7 @@ static inline void forge_r_wr(uint32_t r_mes_i, p_ops_t *p_ops,
 
 // Form the Broadcast work request for the write
 static inline void forge_w_wr(uint32_t w_mes_i, p_ops_t *p_ops,
-                              struct hrd_ctrl_blk *cb, struct ibv_sge *send_sgl,
+                              hrd_ctrl_blk_t *cb, struct ibv_sge *send_sgl,
                               struct ibv_send_wr *send_wr, uint64_t *w_br_tx,
                               uint16_t br_i, uint16_t credits[][MACHINE_NUM],
                               uint8_t vc, uint16_t t_id) {

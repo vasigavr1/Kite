@@ -1103,6 +1103,8 @@ static inline void check_when_polling_for_reads(struct r_message *r_mes, uint32_
                 t_id, r_mes->m_id, prop->opcode, index, prop->t_rmw_id,
                 prop->log_no,
                 r_mes->coalesce_num, prop->ts.version);
+      assert(r_mes->m_id != machine_id);
+
     }
     if (polled_reads + r_num > MAX_INCOMING_R) assert(false);
   }

@@ -10,15 +10,10 @@ void *worker(void *arg)
 	uint16_t t_id = (uint16_t)params.id;
   uint32_t g_id = get_gid((uint8_t) machine_id, t_id);
 
-	if (ENABLE_MULTICAST == 1 && t_id == 0) {
-		my_printf(cyan, "MULTICAST IS ENABLED. PLEASE DISABLE IT AS IT IS NOT WORKING\n");
-		assert(false);
-	}
-  //my_printf(cyan, "Worker %u is running \n", t_id);
 
 	int *recv_q_depths, *send_q_depths;
   set_up_queue_depths(&recv_q_depths, &send_q_depths);
-	struct hrd_ctrl_blk *cb = hrd_ctrl_blk_init(t_id,	/* local_hid */
+	hrd_ctrl_blk_t *cb = hrd_ctrl_blk_init(t_id,	/* local_hid */
 												0, -1, /* port_index, numa_node_id */
 												0, 0,	/* #conn qps, uc */
 												NULL, 0, -1,	/* prealloc conn buf, buf w_size, key */
@@ -36,16 +31,36 @@ void *worker(void *arg)
     (volatile r_mes_ud_t *)(cb->dgram_buf + ACK_BUF_SIZE + W_BUF_SIZE);
   volatile struct  r_rep_message_ud_req *r_rep_buffer =
     (volatile r_rep_mes_ud_t *)(cb->dgram_buf + ACK_BUF_SIZE + W_BUF_SIZE + R_BUF_SIZE);
+
+
+  /* ---------------------------------------------------------------------------
+------------------------------MULTICAST SET UP-------------------------------
+---------------------------------------------------------------------------*/
+  mcast_cb_t *mcast_cb = NULL;
+  // need to init mcast_cb before sync, such that we can post recvs
+  if (ENABLE_MULTICAST) {
+    mcast_cb = kite_init_multicast(cb, t_id);
+    assert(mcast_cb != NULL);
+  }
+
+  struct ibv_cq *r_recv_cq = ENABLE_MULTICAST ? mcast_cb->recv_cq[R_MCAST_QP] : cb->dgram_recv_cq[R_QP_ID];
+  struct ibv_qp *r_recv_qp = ENABLE_MULTICAST ? mcast_cb->recv_qp[R_MCAST_QP] : cb->dgram_qp[R_QP_ID];
+
+  uint32_t lkey = cb->dgram_buf_mr->lkey;
+  uint32_t r_lkey = ENABLE_MULTICAST ? mcast_cb->recv_mr->lkey : lkey;
 	/* ---------------------------------------------------------------------------
 	------------------------------PREPOST RECVS-------------------------------
 	---------------------------------------------------------------------------*/
-	/* Fill the RECV queue that receives the Broadcasts, we need to do this early */
+  /* Fill the RECV queue that receives the Broadcasts, we need to do this early */
   // Pre post receives for writes
-  pre_post_recvs(&w_buf_push_ptr, cb->dgram_qp[W_QP_ID], cb->dgram_buf_mr->lkey, (void *)w_buffer,
-                   W_BUF_SLOTS, MAX_RECV_W_WRS, W_QP_ID, (uint32_t) W_RECV_SIZE);
+
+  pre_post_recvs(&w_buf_push_ptr, cb->dgram_qp[W_QP_ID], lkey, (void *) w_buffer,
+                 W_BUF_SLOTS, MAX_RECV_W_WRS,
+                 W_QP_ID, (uint32_t) W_RECV_SIZE);
   // Pre post receives for reads
-  pre_post_recvs(&r_buf_push_ptr, cb->dgram_qp[R_QP_ID], cb->dgram_buf_mr->lkey, (void *)r_buffer,
-                 R_BUF_SLOTS, MAX_RECV_R_WRS, R_QP_ID, R_RECV_SIZE);
+  pre_post_recvs(&r_buf_push_ptr, r_recv_qp, r_lkey, (void *) r_buffer,
+                 R_BUF_SLOTS, MAX_RECV_R_WRS,
+                 R_QP_ID, (uint32_t) R_RECV_SIZE);
 
 	/* -----------------------------------------------------
 	--------------CONNECT WITH ALL MACHINES-----------------------
@@ -89,22 +104,23 @@ void *worker(void *arg)
 	uint32_t trace_iter = 0;
 
   recv_info_t *r_recv_info, *r_rep_recv_info, *w_recv_info, *ack_recv_info;
-  r_recv_info = init_recv_info(cb, r_buf_push_ptr, R_BUF_SLOTS,
-                               (uint32_t) R_RECV_SIZE, 0, cb->dgram_qp[R_QP_ID],
+
+  r_recv_info = init_recv_info(r_lkey, r_buf_push_ptr, R_BUF_SLOTS,
+                               (uint32_t) R_RECV_SIZE, 0, r_recv_qp,
                                MAX_RECV_R_WRS, r_recv_wr, r_recv_sgl,
                                (void*) r_buffer);
 
-  r_rep_recv_info = init_recv_info(cb, r_rep_buf_push_ptr, R_REP_BUF_SLOTS,
+  r_rep_recv_info = init_recv_info(lkey, r_rep_buf_push_ptr, R_REP_BUF_SLOTS,
                                    (uint32_t) R_REP_RECV_SIZE, 0, cb->dgram_qp[R_REP_QP_ID],
                                    MAX_RECV_R_REP_WRS, r_rep_recv_wr, r_rep_recv_sgl,
                                    (void*) r_rep_buffer);
 
-  w_recv_info = init_recv_info(cb, w_buf_push_ptr, W_BUF_SLOTS,
+  w_recv_info = init_recv_info(lkey, w_buf_push_ptr, W_BUF_SLOTS,
                                (uint32_t) W_RECV_SIZE, MAX_RECV_W_WRS,  cb->dgram_qp[W_QP_ID],
                                MAX_RECV_W_WRS, w_recv_wr, w_recv_sgl,
                                (void*) w_buffer);
 
-  ack_recv_info = init_recv_info(cb, ack_buf_push_ptr, ACK_BUF_SLOTS,
+  ack_recv_info = init_recv_info(lkey, ack_buf_push_ptr, ACK_BUF_SLOTS,
                                  (uint32_t) ACK_RECV_SIZE, 0, cb->dgram_qp[ACK_QP_ID],
                                  MAX_RECV_ACK_WRS, ack_recv_wr, ack_recv_sgl,
                                  (void*) ack_buffer);
@@ -128,7 +144,7 @@ void *worker(void *arg)
   randomize_op_values(ops, t_id);
   kv_resp_t *resp = (kv_resp_t *) malloc(MAX_OP_BATCH * sizeof(kv_resp_t));
   set_up_bcast_WRs(w_send_wr, w_send_sgl, r_send_wr, r_send_sgl,
-                   t_id, cb, w_mr, r_mr);
+                   t_id, cb, w_mr, r_mr, mcast_cb);
   set_up_ack_n_r_rep_WRs(ack_send_wr, ack_send_sgl, r_rep_send_wr, r_rep_send_sgl,
                          cb, r_rep_mr, acks, t_id);
   set_up_credits(credits);
@@ -220,7 +236,7 @@ void *worker(void *arg)
     /* ---------------------------------------------------------------------------
 		------------------------------ POLL FOR READS--------------------------
 		---------------------------------------------------------------------------*/
-    poll_for_reads(r_buffer, &r_buf_pull_ptr, p_ops, cb->dgram_recv_cq[R_QP_ID],
+    poll_for_reads(r_buffer, &r_buf_pull_ptr, p_ops, r_recv_cq,
                     r_recv_wc, t_id, waiting_dbg_counter);
 
     /* ---------------------------------------------------------------------------

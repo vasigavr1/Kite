@@ -27,7 +27,7 @@
 #define MAX_WRITE_SIZE 800 // only writes 400 -- only rmws 1200 in terms of bytes for Writes/Releases/Accepts/Commits
 #define MIN_SS_BATCH 127// The minimum SS batch
 #define MEASURE_SLOW_PATH 0
-
+#define MAX_OP_BATCH SESSIONS_PER_THREAD
 
 
 
@@ -61,7 +61,14 @@
 
 
 
-
+// MULTICAST
+#define MCAST_QPS MACHINE_NUM
+#define MCAST_QP_NUM 1
+#define MCAST_GROUPS_NUM MACHINE_NUM
+#define R_MCAST_QP 0
+#define R_SEND_MCAST_QP 0
+#define R_RECV_MCAST_QP 1
+#define W_MCAST_QP 1 //
 
 
 
