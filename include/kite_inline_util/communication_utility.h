@@ -91,7 +91,6 @@ static inline void forge_r_wr(uint32_t r_mes_i, p_ops_t *p_ops,
     assert(coalesce_num > 0);
     assert(send_sgl[br_i].length <= R_SEND_SIZE);
   }
-
   if (DEBUG_READS && all_reads)
     my_printf(green, "Wrkr %d : I BROADCAST a read message %d of %u reads with mes_size %u, with credits: %d, lid: %u  \n",
               t_id, r_mes->read[coalesce_num - 1].opcode, coalesce_num, send_sgl[br_i].length,
@@ -99,7 +98,7 @@ static inline void forge_r_wr(uint32_t r_mes_i, p_ops_t *p_ops,
   else if (DEBUG_RMW) {
     //struct prop_message *prop_mes = (struct prop_message *) r_mes;
     struct propose *prop = (struct propose *) &r_mes->read[0];
-    my_printf(green, "Wrkr %d : I BROADCAST a propose message %d of %u props with mes_size %u, with credits: %d, lid: %u, "
+    my_printf(green, "Wrkr %u : I BROADCAST a propose message %u with %u props with mes_size %u, with credits: %d, lid: %u, "
                 "rmw_id %u, glob_sess id %u, log_no %u, version %u \n",
               t_id, prop->opcode, coalesce_num, send_sgl[br_i].length,
               credits[vc][(machine_id + 1) % MACHINE_NUM], r_mes->l_id,
@@ -118,7 +117,9 @@ static inline void forge_r_wr(uint32_t r_mes_i, p_ops_t *p_ops,
       }
     }
   }
-
+  if (ENABLE_ASSERTIONS) {
+    //assert(send_wr[get_last_message_of_bcast((br_i + 1), q_info)].sg_list == &send_sgl[br_i]);
+  }
   form_bcast_links(r_br_tx, R_BCAST_SS_BATCH, p_ops->q_info, br_i,
                    send_wr, cb->dgram_send_cq[R_QP_ID], "forging reads", t_id);
 }

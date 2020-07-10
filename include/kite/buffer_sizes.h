@@ -7,13 +7,16 @@
 
 
 // BUFFER SIZES
-#define R_BUF_SLOTS (REM_MACH_NUM * R_CREDITS)
+/*For reads and writes we want more slots than RECV_WRS because of multicasts:
+ * if the machine sleeps, it will keep "receiving" messages. If the buffer space is smaller
+ * than the receives_wrs, then the buffer will get corrupted!*/
+#define R_BUF_SLOTS MAX((REM_MACH_NUM * R_CREDITS), (MAX_RECV_R_WRS + 1))
 #define R_BUF_SIZE (R_RECV_SIZE * R_BUF_SLOTS)
 
 #define R_REP_BUF_SLOTS ((REM_MACH_NUM * R_CREDITS) + R_REP_SLOTS_FOR_ACCEPTS)
 #define R_REP_BUF_SIZE (R_REP_RECV_SIZE * R_REP_BUF_SLOTS)
 
-#define W_BUF_SLOTS (REM_MACH_NUM * W_CREDITS)
+#define W_BUF_SLOTS MAX((REM_MACH_NUM * W_CREDITS), (MAX_RECV_W_WRS + 1))
 #define W_BUF_SIZE (W_RECV_SIZE * W_BUF_SLOTS)
 
 #define ACK_BUF_SLOTS (REM_MACH_NUM * W_CREDITS)

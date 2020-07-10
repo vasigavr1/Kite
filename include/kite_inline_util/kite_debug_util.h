@@ -411,17 +411,6 @@ static inline void print_and_check_mes_when_polling_r_reps(struct r_rep_message 
   }
 }
 
-static inline void increase_credits_when_polling_r_reps(uint16_t credits[][MACHINE_NUM],
-                                                        bool increase_w_credits,
-                                                        uint8_t rem_m_id, uint16_t t_id)
-{
-  if (!increase_w_credits) credits[R_VC][rem_m_id]++;
-  else credits[W_VC][rem_m_id]++;
-  if (ENABLE_ASSERTIONS) {
-    assert(credits[R_VC][rem_m_id] <= R_CREDITS);
-    assert(credits[W_VC][rem_m_id] <= W_CREDITS);
-  }
-}
 
 // Debug session
 static inline void debug_sessions(struct session_dbg *ses_dbg, p_ops_t *p_ops,
@@ -1694,8 +1683,8 @@ static inline void checks_stats_prints_when_sending_acks(ack_mes_t *acks,
     t_stats[t_id].acks_sent_mes_num++;
   }
   if (DEBUG_ACKS)
-    my_printf(yellow, "Wrkr %d is sending an ack for lid %lu, credits %u and ack num %d and m id %d \n",
-              t_id, acks[m_i].l_id, acks[m_i].credits, acks[m_i].ack_num, acks[m_i].m_id);
+    my_printf(yellow, "Wrkr %d is sending an ack  to machine %u for lid %lu, credits %u and ack num %d and m id %d \n",
+              t_id, m_i, acks[m_i].l_id, acks[m_i].credits, acks[m_i].ack_num, acks[m_i].m_id);
 
   if (ENABLE_ASSERTIONS) {
     assert(acks[m_i].credits <= acks[m_i].ack_num);

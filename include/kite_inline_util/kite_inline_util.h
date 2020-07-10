@@ -21,8 +21,6 @@
 #include <config.h>
 
 
-
-
 /* ---------------------------------------------------------------------------
 //------------------------------ PULL NEW REQUESTS ----------------------------------
 //---------------------------------------------------------------------------*/
@@ -292,7 +290,6 @@ static inline void broadcast_reads(p_ops_t *p_ops,
                                    uint32_t *credit_debug_cnt,
                                    uint32_t *time_out_cnt,
                                    struct ibv_sge *r_send_sgl, struct ibv_send_wr *r_send_wr,
-                                   struct ibv_send_wr *w_send_wr,
                                    uint64_t *r_br_tx, recv_info_t *r_rep_recv_info,
                                    uint16_t t_id, uint32_t *outstanding_reads)
 {
@@ -405,7 +402,8 @@ static inline void send_acks(struct ibv_send_wr *ack_send_wr,
     selective_signaling_for_unicast(sent_ack_tx, ACK_SS_BATCH, ack_send_wr,
                                     m_i, cb->dgram_send_cq[ACK_QP_ID], true, "sending acks", t_id);
     if (ack_i > 0) {
-      if (DEBUG_ACKS) my_printf(yellow, "Wrkr %u, ack %u points to ack %u \n", t_id, prev_ack_i, m_i);
+      if (DEBUG_ACKS)
+        my_printf(yellow, "Wrkr %u, ack %u points to ack %u \n", t_id, prev_ack_i, m_i);
       ack_send_wr[prev_ack_i].next = &ack_send_wr[m_i];
     }
     else first_wr = m_i;
@@ -491,10 +489,10 @@ static inline void poll_for_writes(volatile w_mes_ud_t *incoming_ws,
     if (!is_only_accepts) {
       if (ENABLE_ASSERTIONS) assert(writes_to_be_acked > 0);
       if (!ack_bookkeeping(&acks[w_mes->m_id], writes_to_be_acked, w_mes->l_id, w_mes->m_id, t_id)) {
-        (*completed_but_not_polled_writes) = completed_messages - polled_messages;
+
         //if (DEBUG_QUORUM)
-          my_printf(yellow, "Wrkr %u leaves %u messages for the next polling round \n",
-                        t_id, *completed_but_not_polled_writes);
+         // my_printf(yellow, "Wrkr %u leaves %u messages for the next polling round \n",
+         //               t_id, *completed_but_not_polled_writes);
         break;
       }
     }
@@ -505,6 +503,7 @@ static inline void poll_for_writes(volatile w_mes_ud_t *incoming_ws,
     MOD_INCR(buf_ptr, W_BUF_SLOTS);
     polled_messages++;
   }
+  (*completed_but_not_polled_writes) = completed_messages - polled_messages;
   (*pull_ptr) = buf_ptr;
 
   if (writes_for_kvs > 0) {
@@ -609,7 +608,11 @@ static inline void apply_acks(p_ops_t *p_ops, uint16_t ack_num, uint32_t ack_ptr
         for (uint8_t i = 0; i < w_meta->acks_expected; i++) {
           my_printf(red, "%u/%u \n", w_meta->expected_ids[i], w_meta->seen_expected[i]);
         }
-        assert(ack_m_id_found);
+        if (!ENABLE_MULTICAST) assert(ack_m_id_found);
+        else {
+          MOD_INCR(ack_ptr, PENDING_WRITES);
+          continue;
+        }
       }
     }
 
@@ -692,7 +695,10 @@ static inline void poll_acks(volatile ack_mes_ud_t *incoming_acks, uint32_t *pul
     uint64_t pull_lid = p_ops->local_w_id; // l_id at the pull pointer
     uint32_t ack_ptr; // a pointer in the FIFO, from where ack should be added
     credits[W_VC][ack->m_id] += ack->credits;
+    //my_printf(green, "Receving %u write credits, total %u,  from %u \n ",
+    //          ack->credits, credits[W_VC][ack->m_id], ack->m_id);
     //if (t_id == 1) printf("Credits %u, %u, \n", credits[W_VC][ack->m_id], ack->credits);
+    if (credits[W_VC][ack->m_id] > W_CREDITS) credits[W_VC][ack->m_id] = W_CREDITS;
     assert(credits[W_VC][ack->m_id] <= W_CREDITS);
     // if the pending write FIFO is empty it means the acks are for committed messages.
     if (p_ops->w_size == 0 ) {

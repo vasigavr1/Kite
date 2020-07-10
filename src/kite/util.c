@@ -229,7 +229,7 @@ void set_up_queue_depths(int** recv_q_depths, int** send_q_depths)
   //RECV
   (*recv_q_depths)[R_QP_ID] = ENABLE_MULTICAST ? 1 : RECV_R_Q_DEPTH;
   (*recv_q_depths)[R_REP_QP_ID] = RECV_R_REP_Q_DEPTH;
-  (*recv_q_depths)[W_QP_ID] = RECV_W_Q_DEPTH; //ENABLE_MULTICAST ? 1 : RECV_W_Q_DEPTH;
+  (*recv_q_depths)[W_QP_ID] = ENABLE_MULTICAST ? 1 : RECV_W_Q_DEPTH;
   (*recv_q_depths)[ACK_QP_ID] = RECV_ACK_Q_DEPTH;
   //SEND
   (*send_q_depths)[R_QP_ID] = SEND_R_Q_DEPTH;
@@ -324,7 +324,7 @@ p_ops_t* set_up_pending_ops(uint32_t pending_writes,
   // PREP STRUCT
   p_ops->prop_info = (struct prop_info *)malloc(sizeof(struct prop_info));
   memset(p_ops->prop_info, 0, sizeof(struct prop_info));
-  assert(IS_ALIGNED(p_ops->prop_info, 64));
+  //assert(IS_ALIGNED(p_ops->prop_info, 64));
   for (i = 0; i < LOCAL_PROP_NUM; i++) {
     loc_entry_t *loc_entry = &p_ops->prop_info->entry[i];
     loc_entry->sess_id = (uint16_t) i;
@@ -424,10 +424,10 @@ void set_up_bcast_WRs(struct ibv_send_wr *w_send_wr, struct ibv_sge *w_send_sgl,
       bool last = (i == MESSAGES_IN_BCAST - 1);
       set_up_wr(&w_send_wr[index], &w_send_sgl[j], W_ENABLE_INLINING,
                 last, rm_id, remote_thread, W_QP_ID,
-                false, mcast_cb, W_MCAST_QP);
+                ENABLE_MULTICAST, mcast_cb, W_SEND_MCAST_QP);
       set_up_wr(&r_send_wr[index], &r_send_sgl[j], R_ENABLE_INLINING,
                 last, rm_id, remote_thread, R_QP_ID,
-                ENABLE_MULTICAST, mcast_cb, R_MCAST_QP);
+                ENABLE_MULTICAST, mcast_cb, R_SEND_MCAST_QP);
     }
   }
 }

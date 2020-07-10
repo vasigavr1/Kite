@@ -1551,7 +1551,25 @@ static inline bool handle_single_r_rep(struct r_rep_big *r_rep, uint32_t *r_ptr_
 }
 
 
-
+static inline void increase_credits_when_polling_r_reps(uint16_t credits[][MACHINE_NUM],
+                                                        bool increase_w_credits,
+                                                        uint8_t rem_m_id, uint16_t t_id)
+{
+  if (!increase_w_credits) {
+    if (credits[R_VC][rem_m_id] < R_CREDITS)
+      credits[R_VC][rem_m_id]++;
+  }
+  else {
+    if (credits[W_VC][rem_m_id] < W_CREDITS)
+      credits[W_VC][rem_m_id]++;
+  }
+  if (ENABLE_ASSERTIONS) {
+    if (credits[R_VC][rem_m_id] > R_CREDITS)
+      my_printf(red, "Read credits %u \n", credits[R_VC][rem_m_id]);
+    assert(credits[R_VC][rem_m_id] <= R_CREDITS);
+    assert(credits[W_VC][rem_m_id] <= W_CREDITS);
+  }
+}
 
 
 #endif //KITE_RESERVE_STATIONS_UTIL_H

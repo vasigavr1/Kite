@@ -14,23 +14,12 @@
 void *worker(void *arg);
 
 
-
-// ABD EMULATION
-//#define MAX_OP_BATCH (EMULATE_ABD == 1 ? (SESSIONS_PER_THREAD + 1) : (MAX_OP_BATCH_))
-//#define SC_RATIO (EMULATE_ABD == 1 ? 1000 : (SC_RATIO_))
-//#define ENABLE_RELEASES (EMULATE_ABD == 1 ? 1 : (ENABLE_RELEASES_))
-//#define ENABLE_ACQUIRES (EMULATE_ABD == 1 ? 1 : (ENABLE_ACQUIRES_))
-//#define ENABLE_RMWS (EMULATE_ABD == 1 ? 0 : (ENABLE_RMWS_))
-
-
-
-
 // RMWs
 #define LOCAL_PROP_NUM_ (SESSIONS_PER_THREAD)
 #define LOCAL_PROP_NUM (ENABLE_RMWS == 1 ? LOCAL_PROP_NUM_ : 0)
 
 // this allows for reads to insert reads
-#define PENDING_READS MAX((MAX_OP_BATCH + 1), ((2 * SESSIONS_PER_THREAD) + 1))
+#define PENDING_READS MAX((MAX_OP_BATCH + 1), ((2 * SESSIONS_PER_THREAD) + 2))
 #define PENDING_WRITES_ MAX((MAX_OP_BATCH + 1), ((2 * SESSIONS_PER_THREAD) + 1))
 #define PENDING_WRITES MAX((PENDING_WRITES_) , ((W_CREDITS * MAX_MES_IN_WRITE) + 1))
 #define W_FIFO_SIZE (PENDING_WRITES + LOCAL_PROP_NUM) // Accepts use the write fifo
@@ -49,11 +38,6 @@ void *worker(void *arg);
 
 typedef struct kv_resp {
   uint8_t type;
-//  uint8_t kv_ptr_state;
-//  uint32_t log_no; // the log_number of an RMW
-//  mica_op_t *kv_ptr;
-//  struct ts_tuple kv_ptr_ts;
-//  struct rmw_id kv_ptr_rmw_id;
 } kv_resp_t;
 
 typedef  struct r_mes_info {

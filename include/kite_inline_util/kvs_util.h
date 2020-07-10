@@ -762,9 +762,12 @@ static inline void KVS_batch_op_reads(uint32_t op_num, uint16_t t_id, p_ops_t *p
       else if (ENABLE_ASSERTIONS) assert(false);
     }
     else {  //Cache miss --> We get here if either tag or log key match failed
-      my_printf(red, "Opcode %u Kvs miss: bkt %u, server %u, tag %u \n",
-                read->opcode, read->key.bkt, read->key.server, read->key.tag);
-      assert(false); // cant have a miss since, it hit in the source's kvs
+      my_printf(red, "Opcode %s Kvs miss: bkt %u/%u, server %u/%u, tag %u/%u \n",
+                opcode_to_str(read->opcode), read->key.bkt, kv_ptr[op_i]->key.bkt,
+                read->key.server, kv_ptr[op_i]->key.server,
+                read->key.tag, kv_ptr[op_i]->key.tag);
+      //assert(false); // cant have a miss since, it hit in the source's kvs
+      exit(0);
     }
   }
 }
