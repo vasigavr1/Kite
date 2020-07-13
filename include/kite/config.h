@@ -40,7 +40,6 @@
 #define TURN_OFF_KITE_ 1
 #define TURN_OFF_KITE (EMULATE_ABD ? 1 : TURN_OFF_KITE_)
 #define ACCEPT_IS_RELEASE 1
-#define ENABLE_REVIVING (ENABLE_MULTICAST ? 0 : 1)
 
 // TIMEOUTS
 #define WRITE_FIFO_TIMEOUT M_1
@@ -63,7 +62,6 @@
 
 
 // MULTICAST
-//#define MCAST_QPS MACHINE_NUM
 #define MCAST_FLOW_NUM 2 // reads and writes
 #define MCAST_R_FLOW 0
 #define MCAST_W_FLOW 1

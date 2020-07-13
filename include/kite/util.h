@@ -1,7 +1,7 @@
 #ifndef KITE_UTILS_H
 #define KITE_UTILS_H
 
-#include <multicast.h>
+#include "../../../shared/include/multicast/multicast.h"
 #include "kvs.h"
 #include "hrd.h"
 #include "main.h"
@@ -106,19 +106,26 @@ static mcast_cb_t* kite_init_multicast(hrd_ctrl_blk_t *cb, uint16_t t_id)
   recv_q_depth[R_RECV_MCAST_QP] = RECV_R_Q_DEPTH;
   recv_q_depth[W_RECV_MCAST_QP] = RECV_W_Q_DEPTH;
 
+
 	uint16_t recv_qp_num = MCAST_RECV_QP_NUM, send_num = MCAST_SEND_QP_NUM;
 
 	uint16_t * group_to_send_to = (uint16_t *) malloc(MCAST_FLOW_NUM * (sizeof(uint16_t)));
-	uint16_t *active_bcast_machine_num = (uint16_t *) calloc(MCAST_FLOW_NUM, sizeof(uint16_t));
+	uint16_t *groups_per_flow = (uint16_t *) calloc(MCAST_FLOW_NUM, sizeof(uint16_t));
 	for (int i = 0; i < MCAST_FLOW_NUM; ++i) {
 		group_to_send_to[i] = (uint16_t) machine_id; // Which group you want to send to in that flow
-		active_bcast_machine_num[i] = MCAST_GROUPS_PER_FLOW;
+		groups_per_flow[i] = MCAST_GROUPS_PER_FLOW;
 	}
 
+	bool *recvs_from_flow = (bool *) malloc(MCAST_FLOW_NUM * sizeof(bool));
+	for (int i = 0; i < MCAST_FLOW_NUM; ++i) {
+		recvs_from_flow[i] = true;
+	}
 
 	return create_mcast_cb(MCAST_FLOW_NUM, recv_qp_num, send_num,
-												 active_bcast_machine_num, recv_q_depth,
+												 groups_per_flow, recv_q_depth,
 												 group_to_send_to,
+												 recvs_from_flow,
+												 local_ip,
 												 (void *) cb->dgram_buf,
 												 (size_t) TOTAL_BUF_SIZE, t_id);
 
