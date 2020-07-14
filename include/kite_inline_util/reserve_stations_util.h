@@ -213,7 +213,7 @@ static inline void reset_sess_info_on_accept(sess_info_t *sess_info,
 
 /*-------------READS/PROPOSES------------- */
 
-// Returns the size of a read request given an opcode -- Proposes, reads, acquires
+// Returns the capacity of a read request given an opcode -- Proposes, reads, acquires
 static inline uint16_t get_read_size_from_opcode(uint8_t opcode) {
   check_state_with_allowed_flags(9, opcode, OP_RELEASE, OP_ACQUIRE, KVS_OP_PUT,
                                  KVS_OP_GET, OP_ACQUIRE_FLIP_BIT, OP_GET_TS,
@@ -406,7 +406,7 @@ static inline void* get_w_ptr(p_ops_t *p_ops, uint8_t opcode,
   info->message_size += new_size;
   if (DEBUG_WRITES)
     my_printf(green, "Wrkr %u, sess %u inserts write %u, new_message %d, coalesce num %u, "
-                "w_num %u, w_mes_ptr %u, mes_l_id %lu valid l_id %d,  message size %u \n",
+                "w_num %u, w_mes_ptr %u, mes_l_id %lu valid l_id %d,  message capacity %u \n",
               t_id, session_id, opcode, new_message, w_mes->coalesce_num,
               info->writes_num, w_mes_ptr, w_mes->l_id, info->valid_header_l_id, info->message_size);
 
@@ -677,7 +677,7 @@ static inline void finish_r_rep_bookkeeping(p_ops_t *p_ops, struct r_rep_big *re
   }
 }
 
-// This function sets the size and the opcode of a red reply, for reads/acquires and Read TS
+// This function sets the capacity and the opcode of a red reply, for reads/acquires and Read TS
 // The locally stored TS is copied in the r_rep
 static inline void set_up_r_rep_message_size(p_ops_t *p_ops,
                                              struct r_rep_big *r_rep,
@@ -819,7 +819,7 @@ static inline void insert_read(p_ops_t *p_ops, trace_op_t *op,
               t_id, r_mes_ptr, r_mes->coalesce_num, read->opcode);
   check_read_state_and_key(p_ops, r_ptr, source, r_mes, r_info, r_mes_ptr, read, t_id);
 
-  //my_printf(green, "%u r_ptr becomes valid, size %u/%u \n", r_ptr, p_ops->r_size, p_ops->virt_r_size);
+  //my_printf(green, "%u r_ptr becomes valid, capacity %u/%u \n", r_ptr, p_ops->r_size, p_ops->virt_r_size);
   p_ops->r_state[r_ptr] = VALID;
   if (source == FROM_TRACE) {
     p_ops->r_session_id[r_ptr] = op->session_id;
@@ -831,7 +831,7 @@ static inline void insert_read(p_ops_t *p_ops, trace_op_t *op,
       on_starting_an_acquire_query_the_conf(t_id, r_info->epoch_id);
   }
 
-  // Increase the virtual size by 2 if the req is an acquire
+  // Increase the virtual capacity by 2 if the req is an acquire
   p_ops->virt_r_size+= opcode == OP_ACQUIRE ? 2 : 1;
   p_ops->r_size++;
   p_ops->r_fifo->bcast_size++;
@@ -856,7 +856,7 @@ static inline void insert_accept_in_writes_message_fifo(p_ops_t *p_ops,
   check_loc_entry_metadata_is_reset(loc_entry, "insert_accept_in_writes_message_fifo", t_id);
   if (ENABLE_ASSERTIONS) assert(loc_entry->helping_flag != PROPOSE_NOT_LOCALLY_ACKED);
   if (DEBUG_RMW) {
-    my_printf(yellow, "Wrkr %u Inserting an accept, bcast size %u, "
+    my_printf(yellow, "Wrkr %u Inserting an accept, bcast capacity %u, "
                 "rmw_id %lu, fifo push_ptr %u, fifo pull ptr %u\n",
               t_id, p_ops->w_fifo->bcast_size, loc_entry->rmw_id.id,
               p_ops->w_fifo->push_ptr, p_ops->w_fifo->bcast_pull_ptr);
@@ -911,7 +911,7 @@ static inline void insert_write(p_ops_t *p_ops, trace_op_t *op, const uint8_t so
 
   //printf("Insert a write %u \n", *(uint32_t *)write);
   if (DEBUG_READS && source == FROM_READ) {
-    my_printf(yellow, "Wrkr %u Inserting a write as a second round of read/write w_size %u/%d, bcast size %u, "
+    my_printf(yellow, "Wrkr %u Inserting a write as a second round of read/write w_size %u/%d, bcast capacity %u, "
                 " push_ptr %u, pull_ptr %u "
                 "l_id %lu, fifo push_ptr %u, fifo pull ptr %u\n", t_id,
               p_ops->w_size, PENDING_WRITES, p_ops->w_fifo->bcast_size,
@@ -977,7 +977,7 @@ static inline bool fill_trace_op(p_ops_t *p_ops, trace_op_t *op,
         (*sizes_dbg_cntr)++;
         if (*sizes_dbg_cntr == M_32) {
           *sizes_dbg_cntr = 0;
-          printf("Wrkr %u breaking due to max allowed size r_size %u/%d w_size %u/%u \n",
+          printf("Wrkr %u breaking due to max allowed capacity r_size %u/%d w_size %u/%u \n",
                  t_id, p_ops->virt_r_size + reads_num, MAX_ALLOWED_R_SIZE,
                  p_ops->virt_w_size + writes_num, MAX_ALLOWED_W_SIZE);
         }
@@ -1376,7 +1376,7 @@ static inline void read_commit_spawn_flip_bit_message(p_ops_t *p_ops,
   // The read must have the struct key overloaded with the original acquire l_id
   if (DEBUG_BIT_VECS)
     my_printf(cyan, "Wrkr, %u Opcode to be sent in the insert read %u, the local id to be sent %u, "
-                "read_info pull_ptr %u, read_info push_ptr %u read fifo size %u, virtual size: %u  \n",
+                "read_info pull_ptr %u, read_info push_ptr %u read fifo capacity %u, virtual capacity: %u  \n",
               t_id, read_info->opcode, p_ops->local_r_id, pull_ptr,
               p_ops->r_push_ptr, p_ops->r_size, p_ops->virt_r_size);
   /* */
@@ -1421,7 +1421,7 @@ read_commit_complete_and_empty_read_info(p_ops_t *p_ops,
     if (ENABLE_ASSERTIONS) assert(!read_info->complete_flag);
     read_info->complete_flag = true;
   }
-  //my_printf(cyan, "%u ptr freed, size %u/%u \n", pull_ptr, p_ops->r_size, p_ops->virt_r_size);
+  //my_printf(cyan, "%u ptr freed, capacity %u/%u \n", pull_ptr, p_ops->r_size, p_ops->virt_r_size);
   // Clean-up code
   memset(&p_ops->read_info[pull_ptr], 0, 3); // a release uses these bytes for the session id but it's still fine to clear them
   p_ops->r_state[pull_ptr] = INVALID;

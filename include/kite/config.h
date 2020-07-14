@@ -25,7 +25,7 @@
 #define W_CREDITS 8
 #define MAX_READ_SIZE 300 //300 in terms of bytes for Reads/Acquires/RMW-Acquires/Proposes
 #define MAX_WRITE_SIZE 800 // only writes 400 -- only rmws 1200 in terms of bytes for Writes/Releases/Accepts/Commits
-#define MIN_SS_BATCH 127// The minimum SS batch
+//#define MIN_SS_BATCH 127// The minimum SS batch -- moved to top
 #define MEASURE_SLOW_PATH 0
 #define MAX_OP_BATCH SESSIONS_PER_THREAD
 

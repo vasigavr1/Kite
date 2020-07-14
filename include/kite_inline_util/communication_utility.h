@@ -55,7 +55,7 @@ static inline void forge_r_rep_wr(uint32_t r_rep_pull_ptr, uint16_t mes_i, p_ops
   uint8_t coalesce_num = r_rep_mes->coalesce_num;
   send_sgl[mes_i].length = r_rep_fifo->message_sizes[r_rep_pull_ptr];
   if (ENABLE_ASSERTIONS) assert(send_sgl[mes_i].length <= R_REP_SEND_SIZE);
-  //printf("Forging a r_resp with size %u \n", send_sgl[mes_i].length);
+  //printf("Forging a r_resp with capacity %u \n", send_sgl[mes_i].length);
   send_sgl[mes_i].addr = (uint64_t) (uintptr_t) r_rep_mes;
 
   checks_and_prints_when_forging_r_rep_wr(coalesce_num, mes_i, send_sgl, r_rep_pull_ptr,

@@ -31,8 +31,8 @@ static inline bool search_out_of_epoch_writes(p_ops_t *p_ops,
       //my_printf(red, "Wrkr %u: Forwarding value from out-of-epoch write, read key: ", t_id);
       //print_key(read_key);
       //my_printf(red, "write key: "); print_key((struct key*)p_ops->read_info[writes->r_info_ptrs[w_i]].key);
-      //my_printf(red, "size: %u, push_ptr %u, pull_ptr %u, r_info ptr %u \n",
-      //          writes->size, writes->push_ptr, writes->pull_ptr, writes->r_info_ptrs[w_i]);
+      //my_printf(red, "capacity: %u, push_ptr %u, pull_ptr %u, r_info ptr %u \n",
+      //          writes->capacity, writes->push_ptr, writes->pull_ptr, writes->r_info_ptrs[w_i]);
       return true;
     }
     MOD_INCR(w_i, PENDING_READS);

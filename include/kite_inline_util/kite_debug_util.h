@@ -107,7 +107,7 @@ static inline void check_debug_cntrs(uint32_t *credit_debug_cnt, uint32_t *wait_
 {
 
 //  volatile struct  w_message_ud_req *w_buffer =
-//    (volatile w_mes_ud_t *)(buf + ACK_BUF_SIZE);
+//    (volatile w_mes_ud_t *)(recv_buf + ACK_BUF_SIZE);
 //  volatile struct  r_message_ud_req *r_buffer =
 //    (volatile r_mes_ud_t *)(cb->dgram_buf + ACK_BUF_SIZE + W_BUF_SIZE);
 
@@ -214,14 +214,14 @@ static inline void debug_and_count_stats_when_broadcasting_writes
    uint8_t coalesce_num, uint16_t t_id, uint64_t* expected_l_id_to_send,
    uint16_t br_i, uint32_t *outstanding_writes)
 {
-  //bool is_accept = p_ops->w_fifo->w_message[bcast_pull_ptr].write[0].opcode == ACCEPT_OP;
+  //bool is_accept = p_ops->w_fifo->w_message[pull_ptr].write[0].opcode == ACCEPT_OP;
   if (ENABLE_ASSERTIONS) {
 //    if (!is_accept) {
-//      uint64_t lid_to_send = p_ops->w_fifo->w_message[bcast_pull_ptr].l_id;
+//      uint64_t lid_to_send = p_ops->w_fifo->w_message[pull_ptr].l_id;
 //      if (lid_to_send != (*expected_l_id_to_send)) {
 //        my_printf(red, "Wrkr %u, expected l_id %lu lid_to send %u, opcode %u \n",
 //                   t_id, (*expected_l_id_to_send), lid_to_send,
-//                   p_ops->w_fifo->w_message[bcast_pull_ptr].write[0].opcode );
+//                   p_ops->w_fifo->w_message[pull_ptr].write[0].opcode );
 //        assert(false);
 //      }
 //      (*expected_l_id_to_send) = lid_to_send + coalesce_num;
@@ -230,7 +230,7 @@ static inline void debug_and_count_stats_when_broadcasting_writes
     if (coalesce_num == 0) {
       my_printf(red, "Wrkr %u coalesce_num is %u, bcast_size %u, w_size %u, push_ptr %u, pull_ptr %u"
                   " mes fifo push_ptr %u, mes fifo pull ptr %u l_id %lu"
-                  " bcast_pull_ptr %u, br_i %u\n",
+                  " pull_ptr %u, br_i %u\n",
                 t_id, coalesce_num, p_ops->w_fifo->bcast_size,
                 p_ops->w_size,
                 p_ops->w_push_ptr, p_ops->w_pull_ptr,
@@ -243,7 +243,7 @@ static inline void debug_and_count_stats_when_broadcasting_writes
     (*outstanding_writes) += coalesce_num;
   }
   if (ENABLE_STAT_COUNTING) {
-    //bool is_commit = p_ops->w_fifo->w_message[bcast_pull_ptr].write[0].opcode == COMMIT_OP;
+    //bool is_commit = p_ops->w_fifo->w_message[pull_ptr].write[0].opcode == COMMIT_OP;
 //    if (is_accept) t_stats[t_id].accepts_sent++;
 //    else if (is_commit) t_stats[t_id].commits_sent++;
 //    else {
@@ -842,16 +842,16 @@ static inline void check_after_removing_writes(p_ops_t* p_ops, uint16_t t_id)
 {
   if (ENABLE_ASSERTIONS) {
     if (p_ops->w_meta[p_ops->w_pull_ptr].w_state >= READY_RELEASE) {
-      my_printf(red, "W state = %u at ptr  %u, size: %u \n",
+      my_printf(red, "W state = %u at ptr  %u, capacity: %u \n",
                 p_ops->w_meta[p_ops->w_pull_ptr].w_state, p_ops->w_pull_ptr, p_ops->w_size);
       assert(false);
     }
 //    if (p_ops->w_meta[(p_ops->w_pull_ptr + 1) % PENDING_WRITES].w_state >= READY_RELEASE) {
-//      my_printf(red, "W state = %u at ptr %u, push ptr %u , size: %u \n",
+//      my_printf(red, "W state = %u at ptr %u, push ptr %u , capacity: %u \n",
 //                 p_ops->w_meta[(p_ops->w_pull_ptr + 1) % PENDING_WRITES].w_state,
 //                 (p_ops->w_pull_ptr + 1) % PENDING_WRITES,
 //                 p_ops->w_push_ptr, p_ops->w_size);
-//      my_printf(red, "W state = %u at ptr %u, size: %u \n",
+//      my_printf(red, "W state = %u at ptr %u, capacity: %u \n",
 //                 p_ops->w_meta[p_ops->w_pull_ptr].w_state, p_ops->w_pull_ptr, p_ops->w_size);
 //    }
   }

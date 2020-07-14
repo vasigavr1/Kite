@@ -194,7 +194,7 @@ static inline bool opcode_is_rmw_rep(uint8_t opcode)
 }
 
 
-// Give an opcode to get the size of the read rep messages
+// Give an opcode to get the capacity of the read rep messages
 static inline uint16_t get_size_from_opcode(uint8_t opcode)
 {
   if (opcode > CARTS_EQUAL) opcode -= FALSE_POSITIVE_OFFSET;
@@ -234,7 +234,7 @@ static inline uint16_t get_size_from_opcode(uint8_t opcode)
   }
 }
 
-// Returns the size of a write request given an opcode -- Accepts, commits, writes, releases
+// Returns the capacity of a write request given an opcode -- Accepts, commits, writes, releases
 static inline uint16_t get_write_size_from_opcode(uint8_t opcode) {
   switch(opcode) {
     case OP_RELEASE:

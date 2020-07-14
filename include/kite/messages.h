@@ -18,7 +18,7 @@
 #define RMW_VALUE_SIZE VALUE_SIZE //
 #define SESSION_BYTES 2 // session ids must fit in 2 bytes i.e.
 // in the first round of a release the first bytes of the value get overwritten
-// before ovewritting them they get stored in astruct with size SEND_CONF_VEC_SIZE
+// before ovewritting them they get stored in astruct with capacity SEND_CONF_VEC_SIZE
 #define SEND_CONF_VEC_SIZE 2
 
 
@@ -32,7 +32,7 @@
 #define W_COALESCE (EFFECTIVE_MAX_W_SIZE / W_SIZE)
 #define W_MES_SIZE (W_MES_HEADER + (W_SIZE * W_COALESCE))
 
-// ACCEPTS -- ACCEPT coalescing is derived from max write size. ACC reps are derived from accept coalescing
+// ACCEPTS -- ACCEPT coalescing is derived from max write capacity. ACC reps are derived from accept coalescing
 #define ACCEPT_HEADER (35 + 5) //original l_id 8 key 8 rmw-id 10, last-committed rmw_id 10, ts 5 log_no 4 opcode 1, val_len 1
 #define ACCEPT_SIZE (ACCEPT_HEADER + RMW_VALUE_SIZE)
 #define ACC_COALESCE (EFFECTIVE_MAX_W_SIZE / ACCEPT_SIZE)

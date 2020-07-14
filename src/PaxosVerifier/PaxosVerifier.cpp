@@ -101,7 +101,7 @@ bool PerKeyArray::insert_entry_and_find_duplicates(TextEntry &new_entry)
   if (new_entry.log_no >= size) {
     // extend the vector
     //cout << "Extending log number for key " << new_entry.key
-    //     << ": New log " << new_log_no << " vec size: " << size
+    //     << ": New log " << new_log_no << " vec capacity: " << capacity
     //     << " biggest log no: " << biggest_log_no << endl;
     vec.resize(size + max_log_no);
     size = size + max_log_no;

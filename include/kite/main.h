@@ -283,9 +283,9 @@ typedef struct pending_ops {
   uint32_t r_pull_ptr;
   uint32_t w_size; // number of writes in the pending writes (from trace, from reads etc)
   uint32_t r_size;
-  // virtual read size: because acquires can result in one more read,
-  // knowing the size of the read fifo is not enough to know if
-  // you can add an element. Virtual read size captures this by
+  // virtual read capacity: because acquires can result in one more read,
+  // knowing the capacity of the read fifo is not enough to know if
+  // you can add an element. Virtual read capacity captures this by
   // getting incremented by 2, every time an acquire is inserted
 	uint32_t virt_r_size;
   uint32_t virt_w_size;  //

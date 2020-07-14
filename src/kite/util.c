@@ -106,7 +106,7 @@ void print_parameters_in_the_start()
 {
 
 
-  printf("MICA OP size %ld/%d added padding %d  \n",
+  printf("MICA OP capacity %ld/%d added padding %d  \n",
          sizeof(mica_op_t), MICA_OP_SIZE, MICA_OP_PADDING_SIZE);
 
 

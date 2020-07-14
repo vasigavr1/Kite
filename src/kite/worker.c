@@ -18,7 +18,7 @@ void *worker(void *arg)
 	hrd_ctrl_blk_t *cb = hrd_ctrl_blk_init(t_id,	/* local_hid */
 												0, -1, /* port_index, numa_node_id */
 												0, 0,	/* #conn qps, uc */
-												NULL, 0, -1,	/* prealloc conn buf, buf w_size, key */
+												NULL, 0, -1,	/* prealloc conn recv_buf, recv_buf w_size, key */
 												QP_NUM, TOTAL_BUF_SIZE,	/* num_dgram_qps, dgram_buf_size */
 												MASTER_SHM_KEY + t_id, /* key */
 												recv_q_depths, send_q_depths); /* Depth of the dgram RECV Q*/

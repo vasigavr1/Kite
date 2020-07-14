@@ -307,7 +307,8 @@ static inline void broadcast_reads(p_ops_t *p_ops,
     if (DEBUG_READS)
       printf("Wrkr %d has %u read bcasts to send credits %d\n",t_id, p_ops->r_fifo->bcast_size, credits[R_VC][0]);
     // Create the broadcast messages
-    forge_r_wr(bcast_pull_ptr, p_ops, p_ops->q_info, cb, r_send_sgl, r_send_wr, r_br_tx, br_i, credits, vc, t_id);
+    forge_r_wr(bcast_pull_ptr, p_ops, p_ops->q_info, cb, r_send_sgl,
+               r_send_wr, r_br_tx, br_i, credits, vc, t_id);
     br_i++;
     struct r_message * r_mes = (struct r_message *) &p_ops->r_fifo->r_message[bcast_pull_ptr];
       uint8_t coalesce_num = r_mes->coalesce_num;
