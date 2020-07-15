@@ -280,7 +280,7 @@ static inline void broadcast_writes(p_ops_t *p_ops,
 
   p_ops->w_fifo->bcast_pull_ptr = bcast_pull_ptr;
   if (ENABLE_ASSERTIONS) assert(mes_sent <= available_credits && mes_sent <= W_CREDITS);
-  if (mes_sent > 0) decrease_credits(credits, p_ops->q_info, mes_sent, vc);
+  if (mes_sent > 0) decrease_credits(credits[vc], p_ops->q_info, mes_sent);
 }
 
 
@@ -332,7 +332,7 @@ static inline void broadcast_reads(p_ops_t *p_ops,
                                     p_ops->q_info, br_i, *r_br_tx, r_send_wr, cb->dgram_qp[R_QP_ID],
                                     R_ENABLE_INLINING);
   p_ops->r_fifo->bcast_pull_ptr = bcast_pull_ptr;
-  if (mes_sent > 0) decrease_credits(credits, p_ops->q_info, mes_sent, vc);
+  if (mes_sent > 0) decrease_credits(credits[vc], p_ops->q_info, mes_sent);
 }
 
 
