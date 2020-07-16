@@ -214,23 +214,23 @@ static inline void debug_and_count_stats_when_broadcasting_writes
    uint8_t coalesce_num, uint16_t t_id, uint64_t* expected_l_id_to_send,
    uint16_t br_i, uint32_t *outstanding_writes)
 {
-  //bool is_accept = p_ops->w_fifo->w_message[pull_ptr].write[0].opcode == ACCEPT_OP;
+  //bool is_accept = p_ops->w_fifo->w_message[w_pull_ptr].write[0].opcode == ACCEPT_OP;
   if (ENABLE_ASSERTIONS) {
 //    if (!is_accept) {
-//      uint64_t lid_to_send = p_ops->w_fifo->w_message[pull_ptr].l_id;
+//      uint64_t lid_to_send = p_ops->w_fifo->w_message[w_pull_ptr].l_id;
 //      if (lid_to_send != (*expected_l_id_to_send)) {
 //        my_printf(red, "Wrkr %u, expected l_id %lu lid_to send %u, opcode %u \n",
 //                   t_id, (*expected_l_id_to_send), lid_to_send,
-//                   p_ops->w_fifo->w_message[pull_ptr].write[0].opcode );
+//                   p_ops->w_fifo->w_message[w_pull_ptr].write[0].opcode );
 //        assert(false);
 //      }
 //      (*expected_l_id_to_send) = lid_to_send + coalesce_num;
 //    }
     struct w_message *w_mes = (struct w_message *) &p_ops->w_fifo->w_message[bcast_pull_ptr];
     if (coalesce_num == 0) {
-      my_printf(red, "Wrkr %u coalesce_num is %u, bcast_size %u, w_size %u, push_ptr %u, pull_ptr %u"
-                  " mes fifo push_ptr %u, mes fifo pull ptr %u l_id %lu"
-                  " pull_ptr %u, br_i %u\n",
+      my_printf(red, "Wrkr %u coalesce_num is %u, bcast_size %u, w_size %u, w_push_ptr %u, w_pull_ptr %u"
+                  " mes fifo w_push_ptr %u, mes fifo pull ptr %u l_id %lu"
+                  " w_pull_ptr %u, br_i %u\n",
                 t_id, coalesce_num, p_ops->w_fifo->bcast_size,
                 p_ops->w_size,
                 p_ops->w_push_ptr, p_ops->w_pull_ptr,
@@ -243,7 +243,7 @@ static inline void debug_and_count_stats_when_broadcasting_writes
     (*outstanding_writes) += coalesce_num;
   }
   if (ENABLE_STAT_COUNTING) {
-    //bool is_commit = p_ops->w_fifo->w_message[pull_ptr].write[0].opcode == COMMIT_OP;
+    //bool is_commit = p_ops->w_fifo->w_message[w_pull_ptr].write[0].opcode == COMMIT_OP;
 //    if (is_accept) t_stats[t_id].accepts_sent++;
 //    else if (is_commit) t_stats[t_id].commits_sent++;
 //    else {
@@ -1200,7 +1200,7 @@ static inline void print_check_count_stats_when_sending_r_rep(struct r_rep_fifo 
       r_rep = (struct r_rep_big *)(((void *) r_rep_mes) + byte_ptr);
       uint8_t opcode = r_rep->opcode;
       //if (byte_ptr > 505)
-      //printf("%u/%u \n", byte_ptr, r_rep_fifo->message_sizes[pull_ptr]);
+      //printf("%u/%u \n", byte_ptr, r_rep_fifo->message_sizes[w_pull_ptr]);
       if (opcode > CARTS_EQUAL) opcode -= FALSE_POSITIVE_OFFSET;
       if (opcode < TS_TOO_HIGH || opcode > CARTS_EQUAL)
         printf("R_rep %u/%u, byte ptr %u/%u opcode %u/%u \n",

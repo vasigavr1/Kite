@@ -288,14 +288,14 @@ p_ops_t* set_up_pending_ops(uint32_t pending_writes,
   p_ops->q_info = set_up_q_info(w_send_wr, r_send_wr, credits);
 
 
-  //p_ops->w_state = (uint8_t *) malloc(pending_writes * sizeof(uint8_t *));
+  //p_ops->w_state = (uint8_t *) malloc(zk_ctx * sizeof(uint8_t *));
   p_ops->r_state = (uint8_t *) malloc(pending_reads * sizeof(uint8_t *));
-  //p_ops->w_session_id = (uint32_t *) calloc(pending_writes, sizeof(uint32_t));
+  //p_ops->w_session_id = (uint32_t *) calloc(zk_ctx, sizeof(uint32_t));
   p_ops->r_session_id = (uint32_t *) calloc(pending_reads, sizeof(uint32_t));
   p_ops->w_index_to_req_array = (uint32_t *) calloc(pending_writes, sizeof(uint32_t));
   p_ops->r_index_to_req_array = (uint32_t *) calloc(pending_reads, sizeof(uint32_t));
   //p_ops->session_has_pending_op = (bool *) calloc(SESSIONS_PER_THREAD, sizeof(bool));
-  //p_ops->acks_seen = (uint8_t *) calloc(pending_writes, sizeof(uint8_t));
+  //p_ops->acks_seen = (uint8_t *) calloc(zk_ctx, sizeof(uint8_t));
   p_ops->read_info = (r_info_t *) calloc(pending_reads, sizeof(r_info_t));
   p_ops->p_ooe_writes =
     (struct pending_out_of_epoch_writes *) calloc(1, sizeof(struct pending_out_of_epoch_writes));

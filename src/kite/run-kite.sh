@@ -66,7 +66,7 @@ export MLX5_SINGLE_THREADED=1
 export MLX5_SCATTER_TO_CQE=1
 
 
-sudo killall kite
+#sudo killall kite
 
 # A function to echo in blue color
 function blue() {
@@ -84,7 +84,7 @@ function blue() {
 
 # free the  pages workers use
 
-blue "Removing SHM keys used by MICA"
+#blue "Removing SHM keys used by MICA"
 for i in `seq 0 28`; do
 	key=`expr 1185 + $i`
 	sudo ipcrm -M $key 2>/dev/null
@@ -93,7 +93,7 @@ for i in `seq 0 28`; do
 done
 
 
-blue "Removing hugepages"
+#blue "Removing hugepages"
 #shm-rm.sh 1>/dev/null 2>/dev/null
 
 for i in `seq 0 64`; do		# Lossy index and circular log
@@ -103,12 +103,10 @@ sudo ipcrm -M 3185	2>/dev/null		# Request region at server
 sudo ipcrm -M 3186	2>/dev/null		# Response region at server
 
 
-blue "Reset server QP registry"
-#sudo killall memcached
-memcached -l 0.0.0.0 1>/dev/null 2>/dev/null &
+#blue "Reset server QP registry"
 sleep 1
 #
-blue "Running  worker threads"
+#blue "Running  worker threads"
 # sudo LD_LIBRARY_PATH=/usr/local/lib/ -E \
 	./kite \
 	--all-ips ${remoteIPs[@]} \

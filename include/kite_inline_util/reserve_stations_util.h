@@ -307,7 +307,7 @@ static inline void reset_write_message(p_ops_t *p_ops)
   struct w_message *w_mes = (struct w_message *)
     &p_ops->w_fifo->w_message[w_mes_ptr];
   w_mes_info_t * info = &p_ops->w_fifo->info[w_mes_ptr];
-  //my_printf(cyan, "resetting message %u \n", p_ops->w_fifo->push_ptr);
+  //my_printf(cyan, "resetting message %u \n", p_ops->w_fifo->w_push_ptr);
   w_mes->l_id = 0;
   w_mes->coalesce_num = 0;
   info->message_size = (uint16_t) W_MES_HEADER;
@@ -624,14 +624,14 @@ static inline struct r_rep_big* get_r_rep_ptr(p_ops_t *p_ops, uint64_t l_id,
     is_accept = read_opcode == ACCEPT_OP || read_opcode == ACCEPT_OP_NO_CREDITS;
   bool is_rmw = (is_propose || is_accept);
   bool is_read_rep = !is_rmw;
-  //bool current_message_is_r_rep = r_rep_mes[r_rep_fifo->push_ptr].opcode == READ_REPLY;
+  //bool current_message_is_r_rep = r_rep_mes[r_rep_fifo->w_push_ptr].opcode == READ_REPLY;
   /* A reply message corresponds to exactly one read message
   * to avoid reasoning about l_ids, credits and so on */
 
   if (!coalesce){
     set_up_r_rep_entry(r_rep_fifo, rem_m_id, l_id, read_opcode, is_rmw);
-    //my_printf(cyan, "Wrkr %u Creating a new read_reply message opcode: %u/%u at push_ptr %u\n",
-    //           t_id, r_rep_mes[r_rep_fifo->push_ptr].opcode, read_opcode, r_rep_fifo->push_ptr);
+    //my_printf(cyan, "Wrkr %u Creating a new read_reply message opcode: %u/%u at w_push_ptr %u\n",
+    //           t_id, r_rep_mes[r_rep_fifo->w_push_ptr].opcode, read_opcode, r_rep_fifo->w_push_ptr);
   }
   uint32_t r_rep_mes_ptr = r_rep_fifo->push_ptr;
   struct r_rep_message *r_rep_mes = (struct r_rep_message *) &r_rep_fifo->r_rep_message[r_rep_mes_ptr];
@@ -840,7 +840,7 @@ static inline void insert_read(p_ops_t *p_ops, trace_op_t *op,
   MOD_INCR(p_ops->r_push_ptr, PENDING_READS);
 
   if (ENABLE_STAT_COUNTING) {
-    t_stats[t_id].reads_sent ++;
+    t_stats[t_id].reads_sent++;
     if (r_mes->coalesce_num == 1) t_stats[t_id].reads_sent_mes_num++;
   }
 
@@ -857,7 +857,7 @@ static inline void insert_accept_in_writes_message_fifo(p_ops_t *p_ops,
   if (ENABLE_ASSERTIONS) assert(loc_entry->helping_flag != PROPOSE_NOT_LOCALLY_ACKED);
   if (DEBUG_RMW) {
     my_printf(yellow, "Wrkr %u Inserting an accept, bcast capacity %u, "
-                "rmw_id %lu, fifo push_ptr %u, fifo pull ptr %u\n",
+                "rmw_id %lu, fifo w_push_ptr %u, fifo pull ptr %u\n",
               t_id, p_ops->w_fifo->bcast_size, loc_entry->rmw_id.id,
               p_ops->w_fifo->push_ptr, p_ops->w_fifo->bcast_pull_ptr);
   }
@@ -912,8 +912,8 @@ static inline void insert_write(p_ops_t *p_ops, trace_op_t *op, const uint8_t so
   //printf("Insert a write %u \n", *(uint32_t *)write);
   if (DEBUG_READS && source == FROM_READ) {
     my_printf(yellow, "Wrkr %u Inserting a write as a second round of read/write w_size %u/%d, bcast capacity %u, "
-                " push_ptr %u, pull_ptr %u "
-                "l_id %lu, fifo push_ptr %u, fifo pull ptr %u\n", t_id,
+                " w_push_ptr %u, w_pull_ptr %u "
+                "l_id %lu, fifo w_push_ptr %u, fifo pull ptr %u\n", t_id,
               p_ops->w_size, PENDING_WRITES, p_ops->w_fifo->bcast_size,
               p_ops->w_push_ptr, p_ops->w_pull_ptr,
               w_mes->l_id, p_ops->w_fifo->push_ptr, p_ops->w_fifo->bcast_pull_ptr);
@@ -1018,7 +1018,7 @@ static inline bool fill_trace_op(p_ops_t *p_ops, trace_op_t *op,
   if (ENABLE_ASSERTIONS && DEBUG_SESSIONS) ses_dbg->dbg_cnt[working_session] = 0;
   if (MEASURE_LATENCY) start_measurement(latency_info, (uint32_t) working_session, t_id, op->opcode);
 
-  //if (pull_ptr[[working_session]] == 100000) my_printf(yellow, "Working ses %u \n", working_session);
+  //if (w_pull_ptr[[working_session]] == 100000) my_printf(yellow, "Working ses %u \n", working_session);
   //my_printf(yellow, "BEFORE: OP_i %u -> session %u, opcode: %u \n", op_i, working_session, ops[op_i].opcode);
   //my_printf(yellow, "Wrkr %u, session %u, opcode %u \n", t_id, working_session, op->opcode);
   *writes_num_ = writes_num, *reads_num_ = reads_num;
@@ -1376,7 +1376,7 @@ static inline void read_commit_spawn_flip_bit_message(p_ops_t *p_ops,
   // The read must have the struct key overloaded with the original acquire l_id
   if (DEBUG_BIT_VECS)
     my_printf(cyan, "Wrkr, %u Opcode to be sent in the insert read %u, the local id to be sent %u, "
-                "read_info pull_ptr %u, read_info push_ptr %u read fifo capacity %u, virtual capacity: %u  \n",
+                "read_info w_pull_ptr %u, read_info w_push_ptr %u read fifo capacity %u, virtual capacity: %u  \n",
               t_id, read_info->opcode, p_ops->local_r_id, pull_ptr,
               p_ops->r_push_ptr, p_ops->r_size, p_ops->virt_r_size);
   /* */
@@ -1421,7 +1421,7 @@ read_commit_complete_and_empty_read_info(p_ops_t *p_ops,
     if (ENABLE_ASSERTIONS) assert(!read_info->complete_flag);
     read_info->complete_flag = true;
   }
-  //my_printf(cyan, "%u ptr freed, capacity %u/%u \n", pull_ptr, p_ops->r_size, p_ops->virt_r_size);
+  //my_printf(cyan, "%u ptr freed, capacity %u/%u \n", w_pull_ptr, p_ops->r_size, p_ops->virt_r_size);
   // Clean-up code
   memset(&p_ops->read_info[pull_ptr], 0, 3); // a release uses these bytes for the session id but it's still fine to clear them
   p_ops->r_state[pull_ptr] = INVALID;

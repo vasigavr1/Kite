@@ -31,8 +31,8 @@ static inline bool search_out_of_epoch_writes(p_ops_t *p_ops,
       //my_printf(red, "Wrkr %u: Forwarding value from out-of-epoch write, read key: ", t_id);
       //print_key(read_key);
       //my_printf(red, "write key: "); print_key((struct key*)p_ops->read_info[writes->r_info_ptrs[w_i]].key);
-      //my_printf(red, "capacity: %u, push_ptr %u, pull_ptr %u, r_info ptr %u \n",
-      //          writes->capacity, writes->push_ptr, writes->pull_ptr, writes->r_info_ptrs[w_i]);
+      //my_printf(red, "capacity: %u, w_push_ptr %u, w_pull_ptr %u, r_info ptr %u \n",
+      //          writes->capacity, writes->w_push_ptr, writes->w_pull_ptr, writes->r_info_ptrs[w_i]);
       return true;
     }
     MOD_INCR(w_i, PENDING_READS);
@@ -512,7 +512,7 @@ static inline void KVS_reads_proposes(struct read *read, mica_op_t *kv_ptr,
   if (ENABLE_ASSERTIONS) assert(p_ops->r_rep_fifo->message_sizes[p_ops->r_rep_fifo->push_ptr] <= R_REP_SEND_SIZE);
   bool false_pos = take_ownership_of_a_conf_bit(rmw_l_id, prop_m_id, true, t_id);
   finish_r_rep_bookkeeping(p_ops, (struct r_rep_big*) prop_rep, false_pos, prop_m_id, t_id);
-  //struct rmw_rep_message *rmw_mes = (struct rmw_rep_message *) &p_ops->r_rep_fifo->r_rep_message[p_ops->r_rep_fifo->push_ptr];
+  //struct rmw_rep_message *rmw_mes = (struct rmw_rep_message *) &p_ops->r_rep_fifo->r_rep_message[p_ops->r_rep_fifo->w_push_ptr];
 
 }
 
@@ -753,9 +753,9 @@ static inline void KVS_batch_op_reads(uint32_t op_num, uint16_t t_id, p_ops_t *p
         }
         else if (ENABLE_ASSERTIONS){
           //my_printf(red, "wrong Opcode in KVS: %d, req %d, m_id %u, val_len %u, version %u , \n",
-          //           op->opcode, I, reads[(pull_ptr + I) % max_op_size]->m_id,
-          //           reads[(pull_ptr + I) % max_op_size]->val_len,
-          //          reads[(pull_ptr + I) % max_op_size]->version);
+          //           op->opcode, I, reads[(w_pull_ptr + I) % max_op_size]->m_id,
+          //           reads[(w_pull_ptr + I) % max_op_size]->val_len,
+          //          reads[(w_pull_ptr + I) % max_op_size]->version);
           assert(false);
         }
       }
@@ -892,7 +892,7 @@ static inline void KVS_isolated_op(int t_id, write_t *write)
           assert(false);
         }
       }
-      //my_printf(red, "op val len %d in ptr %d, total ops %d \n", op->val_len, (pull_ptr + I) % max_op_size, op_num );
+      //my_printf(red, "op val len %d in ptr %d, total ops %d \n", op->val_len, (w_pull_ptr + I) % max_op_size, op_num );
       struct ts_tuple base_ts = {write->m_id, write->version};
       write_kv_if_conditional_on_ts(kv_ptr, write->value,
                                     (size_t) VALUE_SIZE, FROM_ISOLATED_OP,
