@@ -493,7 +493,7 @@ static inline void poll_for_writes(volatile w_mes_ud_t *incoming_ws,
 
         //if (DEBUG_QUORUM)
          // my_printf(yellow, "Wrkr %u leaves %u messages for the next polling round \n",
-         //               t_id, *completed_but_not_polled_writes);
+         //               t_id, *completed_but_not_polled);
         break;
       }
     }
@@ -540,7 +540,7 @@ static inline void poll_for_reads(volatile r_mes_ud_t *incoming_rs,
       if (is_propose) {
         struct propose *prop = (struct propose *) read;
         check_state_with_allowed_flags(2, prop->opcode, PROPOSE_OP);
-        p_ops->ptrs_to_mes_ops[polled_reads] = (void *) prop; //(((void *) prop) -3); //align with the kvs op
+        p_ops->ptrs_to_mes_ops[polled_reads] = (void *) prop;
       }
       else {
         check_read_opcode_when_polling_for_reads(read, i, r_num, t_id);
@@ -552,7 +552,7 @@ static inline void poll_for_reads(volatile r_mes_ud_t *incoming_rs,
         if (read->opcode == OP_ACQUIRE_FLIP_BIT)
           raise_conf_bit_iff_owned(*(uint64_t *) &read->key, (uint16_t) r_mes->m_id, false, t_id);
 
-        p_ops->ptrs_to_mes_ops[polled_reads] = (void *) read; //(((void *) read) - 3); //align with the kvs op
+        p_ops->ptrs_to_mes_ops[polled_reads] = (void *) read;
 
       }
       p_ops->ptrs_to_mes_headers[polled_reads] = r_mes;
