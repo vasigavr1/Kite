@@ -68,7 +68,7 @@ void *worker(void *arg)
 	/* -----------------------------------------------------
 	--------------CONNECT WITH ALL MACHINES-----------------------
 	---------------------------------------------------------*/
-  setup_connections_and_spawn_stats_thread(g_id, cb, t_id);
+  setup_connections_and_spawn_stats_thread(cb, t_id);
 
 	/* -----------------------------------------------------
 	--------------DECLARATIONS------------------------------
