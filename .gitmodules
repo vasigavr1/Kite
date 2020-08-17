@@ -1,3 +1,5 @@
 [submodule "odyssey-shared"]
 	path = odyssey-shared
 	url = https://github.com/vasigavr1/odyssey-shared.git
+[submodule "kite"]
+	url = git@github.com:vasigavr1/Kite.git
