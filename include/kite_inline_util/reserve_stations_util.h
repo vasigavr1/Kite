@@ -953,7 +953,8 @@ static inline void insert_r_rep(p_ops_t *p_ops, uint64_t l_id, uint16_t t_id,
 
 
 // Fill the trace_op to be passed to the KVS. Returns whether no more requests can be processed
-static inline bool fill_trace_op(p_ops_t *p_ops, trace_op_t *op,
+static inline bool fill_trace_op(context_t *ctx,
+                                 p_ops_t *p_ops, trace_op_t *op,
                                  trace_t *trace,
                                  uint16_t op_i, int working_session, uint16_t *writes_num_, uint16_t *reads_num_,
                                  struct session_dbg *ses_dbg,latency_info_t *latency_info,
@@ -998,7 +999,7 @@ static inline bool fill_trace_op(p_ops_t *p_ops, trace_op_t *op,
     assert(*(uint64_t *) op->value_to_write == 1);
   }
   if (is_rmw && ENABLE_ALL_ABOARD) {
-    op->attempt_all_aboard = p_ops->q_info->missing_num == 0;
+    op->attempt_all_aboard = ctx->q_info->missing_num == 0;
   }
 
   if (op->opcode == KVS_OP_PUT) {
@@ -1551,23 +1552,25 @@ static inline bool handle_single_r_rep(struct r_rep_big *r_rep, uint32_t *r_ptr_
 }
 
 
-static inline void increase_credits_when_polling_r_reps(uint16_t credits[][MACHINE_NUM],
+static inline void increase_credits_when_polling_r_reps(context_t *ctx,
                                                         bool increase_w_credits,
-                                                        uint8_t rem_m_id, uint16_t t_id)
+                                                        uint8_t rem_m_id)
 {
+  uint16_t *r_credits = ctx->qp_meta[R_QP_ID].credits;
+  uint16_t *w_credits = ctx->qp_meta[W_QP_ID].credits;
   if (!increase_w_credits) {
-    if (credits[R_VC][rem_m_id] < R_CREDITS)
-      credits[R_VC][rem_m_id]++;
+    if (r_credits[rem_m_id] < R_CREDITS)
+      r_credits[rem_m_id]++;
   }
   else {
-    if (credits[W_VC][rem_m_id] < W_CREDITS)
-      credits[W_VC][rem_m_id]++;
+    if (w_credits[rem_m_id] < W_CREDITS)
+      w_credits[rem_m_id]++;
   }
   if (ENABLE_ASSERTIONS) {
-    if (credits[R_VC][rem_m_id] > R_CREDITS)
-      my_printf(red, "Read credits %u \n", credits[R_VC][rem_m_id]);
-    assert(credits[R_VC][rem_m_id] <= R_CREDITS);
-    assert(credits[W_VC][rem_m_id] <= W_CREDITS);
+    if (r_credits[rem_m_id] > R_CREDITS)
+      my_printf(red, "Read credits %u \n", r_credits[rem_m_id]);
+    assert(r_credits[rem_m_id] <= R_CREDITS);
+    assert(w_credits[rem_m_id] <= W_CREDITS);
   }
 }
 

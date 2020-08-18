@@ -5,9 +5,7 @@
 #include "kvs.h"
 #include "hrd.h"
 #include "main.h"
-
-
-
+#include "../../../odlib/include/network_api/network_context.h"
 
 
 extern uint64_t seed;
@@ -60,12 +58,7 @@ void print_latency_stats(void);
 //Set up the depths of all QPs
 void set_up_queue_depths(int**, int**);
 // Initialize the struct that holds all pending ops
-p_ops_t* set_up_pending_ops(uint32_t pending_writes,
-														uint32_t pending_reads,
-														struct ibv_send_wr *w_send_wr,
-														struct ibv_send_wr *r_send_wr,
-                            uint16_t credits[][MACHINE_NUM],
-														uint16_t t_id);
+p_ops_t* set_up_pending_ops(context_t *ctx);
 // Set up the memory registrations in case inlining is disabled
 // Set up the memory registrations required
 void set_up_mr(struct ibv_mr **mr, void *buf, uint8_t enable_inlining, uint32_t buffer_size,

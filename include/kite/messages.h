@@ -223,21 +223,21 @@ struct propose {
 
 /*------- HEADERS---------------------- */
 
-struct w_message {
+typedef struct w_message {
   uint8_t m_id;
   uint8_t coalesce_num;
   uint8_t opcode;
   uint64_t l_id ;
   write_t write[W_COALESCE];
-} __attribute__((__packed__));
+} __attribute__((__packed__)) w_mes_t;
 
 //
-struct r_message {
+typedef struct r_message {
   uint8_t coalesce_num;
   uint8_t m_id;
   uint64_t l_id ;
   struct read read[R_COALESCE];
-} __attribute__((__packed__));
+} __attribute__((__packed__)) r_mes_t;
 
 typedef struct w_message_ud_req {
   uint8_t unused[GRH_SIZE];
@@ -268,13 +268,13 @@ struct r_rep_big {
 
 
 //
-struct r_rep_message {
+typedef struct r_rep_message {
   uint8_t coalesce_num;
   uint8_t m_id;
   uint8_t opcode;
   uint64_t l_id;
   struct r_rep_big r_rep[MAX_R_REP_COALESCE];
-} __attribute__((__packed__));
+} __attribute__((__packed__)) r_rep_mes_t;
 
 
 typedef struct r_rep_message_ud_req {

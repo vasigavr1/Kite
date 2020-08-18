@@ -276,16 +276,12 @@ quorum_info_t* set_up_q_info(struct ibv_send_wr *w_send_wr,
 
 
 // Initialize the pending ops struct
-p_ops_t* set_up_pending_ops(uint32_t pending_writes,
-                            uint32_t pending_reads,
-                            struct ibv_send_wr *w_send_wr,
-                            struct ibv_send_wr *r_send_wr,
-                            uint16_t credits[][MACHINE_NUM],
-                            uint16_t t_id)
+p_ops_t* set_up_pending_ops(context_t *ctx)
 {
+  uint32_t pending_reads = (uint32_t) PENDING_READS;
+  uint32_t pending_writes = (uint32_t) PENDING_WRITES;
   uint32_t i, j;
-   p_ops_t *p_ops = (p_ops_t *) calloc(1, sizeof(p_ops_t));
-  p_ops->q_info = set_up_q_info(w_send_wr, r_send_wr, credits);
+  p_ops_t *p_ops = (p_ops_t *) calloc(1, sizeof(p_ops_t));
 
 
   //p_ops->w_state = (uint8_t *) malloc(zk_ctx * sizeof(uint8_t *));
@@ -328,7 +324,7 @@ p_ops_t* set_up_pending_ops(uint32_t pending_writes,
   for (i = 0; i < LOCAL_PROP_NUM; i++) {
     loc_entry_t *loc_entry = &p_ops->prop_info->entry[i];
     loc_entry->sess_id = (uint16_t) i;
-    loc_entry->glob_sess_id = get_glob_sess_id((uint8_t)machine_id, t_id, (uint16_t) i);
+    loc_entry->glob_sess_id = get_glob_sess_id((uint8_t)machine_id, ctx->t_id, (uint16_t) i);
     loc_entry->l_id = (uint64_t) loc_entry->sess_id;
     loc_entry->rmw_id.id = (uint64_t) loc_entry->glob_sess_id;
     loc_entry->help_rmw = (struct rmw_help_entry *) calloc(1, sizeof(struct rmw_help_entry));

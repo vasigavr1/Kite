@@ -13,145 +13,72 @@ void *worker(void *arg)
     my_printf(cyan, " Multicast is enabled \n");
 
 
-	int *recv_q_depths, *send_q_depths;
-  set_up_queue_depths(&recv_q_depths, &send_q_depths);
-	hrd_ctrl_blk_t *cb = hrd_ctrl_blk_init(t_id,	/* local_hid */
-												0, -1, /* port_index, numa_node_id */
-												0, 0,	/* #conn qps, uc */
-												NULL, 0, -1,	/* prealloc conn recv_buf, recv_buf w_size, key */
-												QP_NUM, TOTAL_BUF_SIZE,	/* num_dgram_qps, dgram_buf_size */
-												MASTER_SHM_KEY + t_id, /* key */
-												recv_q_depths, send_q_depths); /* Depth of the dgram RECV Q*/
+  context_t *ctx = create_ctx((uint8_t) machine_id,
+                              (uint16_t) params.id,
+                              (uint16_t) QP_NUM,
+                              local_ip);
 
-  uint32_t ack_buf_push_ptr = 0, ack_buf_pull_ptr = 0,
-    w_buf_push_ptr = 0, w_buf_pull_ptr = 0,  r_buf_push_ptr = 0, r_buf_pull_ptr = 0,
-    r_rep_buf_push_ptr = 0, r_rep_buf_pull_ptr = 0;
-  volatile ack_mes_ud_t *ack_buffer = (ack_mes_ud_t *)(cb->dgram_buf);
-  volatile struct  w_message_ud_req *w_buffer =
-    (volatile w_mes_ud_t *)(cb->dgram_buf + ACK_BUF_SIZE);
-  volatile struct  r_message_ud_req *r_buffer =
-    (volatile r_mes_ud_t *)(cb->dgram_buf + ACK_BUF_SIZE + W_BUF_SIZE);
-  volatile struct  r_rep_message_ud_req *r_rep_buffer =
-    (volatile r_rep_mes_ud_t *)(cb->dgram_buf + ACK_BUF_SIZE + W_BUF_SIZE + R_BUF_SIZE);
+  per_qp_meta_t *qp_meta = ctx->qp_meta;
+  create_per_qp_meta(&qp_meta[R_QP_ID], MAX_R_WRS,
+                     MAX_RECV_R_WRS, SEND_BCAST_RECV_BCAST,  RECV_REQ,
+                     REM_MACH_NUM, REM_MACH_NUM, R_BUF_SLOTS,
+                     R_RECV_SIZE, R_SEND_SIZE, ENABLE_MULTICAST, ENABLE_MULTICAST,
+                     R_SEND_MCAST_QP, 0, R_FIFO_SIZE,
+                     R_CREDITS, R_MES_HEADER,
+                     "send reads", "recv reads");
 
+  ///
+  create_per_qp_meta(&qp_meta[W_QP_ID], MAX_W_WRS,
+                     MAX_RECV_W_WRS, SEND_BCAST_RECV_BCAST,  RECV_REQ,
+                     REM_MACH_NUM, REM_MACH_NUM, W_BUF_SLOTS,
+                     W_RECV_SIZE, W_SEND_SIZE, ENABLE_MULTICAST, ENABLE_MULTICAST,
+                     W_SEND_MCAST_QP, 0, W_FIFO_SIZE,
+                     W_CREDITS, W_MES_HEADER,
+                     "send writes", "recv writes");
+  ///
+  create_per_qp_meta(&qp_meta[R_REP_QP_ID], MAX_R_REP_WRS,
+                     MAX_RECV_R_REP_WRS, SEND_UNI_REP_RECV_UNI_REP, RECV_REPLY,
+                     REM_MACH_NUM, REM_MACH_NUM, R_REP_BUF_SLOTS,
+                     R_REP_RECV_SIZE, R_REP_SEND_SIZE, false, false,
+                     0, 0, R_REP_FIFO_SIZE,
+                     0, R_REP_MES_HEADER,
+                     "send r_reps", "recv r_reps");
+  ///
 
-  /* ---------------------------------------------------------------------------
-------------------------------MULTICAST SET UP-------------------------------
----------------------------------------------------------------------------*/
-  mcast_cb_t *mcast_cb = NULL;
-  // need to init mcast_cb before sync, such that we can post recvs
-  if (ENABLE_MULTICAST) {
-    mcast_cb = kite_init_multicast(cb, t_id);
-    assert(mcast_cb != NULL);
-  }
+  ///
+  create_per_qp_meta(&qp_meta[ACK_QP_ID], MAX_ACK_WRS, MAX_RECV_ACK_WRS,
+                     SEND_UNI_REP_RECV_UNI_REP,
+                     RECV_REPLY,
+                     REM_MACH_NUM, REM_MACH_NUM, ACK_BUF_SLOTS,
+                     ACK_RECV_SIZE, ACK_SIZE, false, false,
+                     0, 0, 0, 0, 0,
+                     "send acks", "recv acks");
+  set_up_ctx(ctx);
 
-  struct ibv_cq *r_recv_cq = ENABLE_MULTICAST ? mcast_cb->recv_cq[R_RECV_MCAST_QP] : cb->dgram_recv_cq[R_QP_ID];
-  struct ibv_qp *r_recv_qp = ENABLE_MULTICAST ? mcast_cb->recv_qp[R_RECV_MCAST_QP] : cb->dgram_qp[R_QP_ID];
-  struct ibv_cq *w_recv_cq = ENABLE_MULTICAST ? mcast_cb->recv_cq[W_RECV_MCAST_QP] : cb->dgram_recv_cq[W_QP_ID];
-  struct ibv_qp *w_recv_qp = ENABLE_MULTICAST ? mcast_cb->recv_qp[W_RECV_MCAST_QP] : cb->dgram_qp[W_QP_ID];
-  uint32_t lkey = cb->dgram_buf_mr->lkey;
-  uint32_t mcast_lkey = ENABLE_MULTICAST ? mcast_cb->recv_mr->lkey : lkey;
-	/* ---------------------------------------------------------------------------
-	------------------------------PREPOST RECVS-------------------------------
-	---------------------------------------------------------------------------*/
-  /* Fill the RECV queue that receives the Broadcasts, we need to do this early */
-  // Pre post receives for writes
+  /* -----------------------------------------------------
+  --------------CONNECT -----------------------
+  ---------------------------------------------------------*/
+  setup_connections_and_spawn_stats_thread(ctx->cb, t_id);
+  init_ctx_send_wrs(ctx);
 
-  pre_post_recvs(&w_buf_push_ptr, w_recv_qp, mcast_lkey, (void *) w_buffer,
-                 W_BUF_SLOTS, MAX_RECV_W_WRS,
-                 W_QP_ID, (uint32_t) W_RECV_SIZE);
-  // Pre post receives for reads
-  pre_post_recvs(&r_buf_push_ptr, r_recv_qp, mcast_lkey, (void *) r_buffer,
-                 R_BUF_SLOTS, MAX_RECV_R_WRS,
-                 R_QP_ID, (uint32_t) R_RECV_SIZE);
-
-	/* -----------------------------------------------------
-	--------------CONNECT WITH ALL MACHINES-----------------------
-	---------------------------------------------------------*/
-  setup_connections_and_spawn_stats_thread(cb, t_id);
-
-	/* -----------------------------------------------------
-	--------------DECLARATIONS------------------------------
-	---------------------------------------------------------*/
-  // R_QP_ID 0: send Reads -- receive Reads
-  struct ibv_send_wr r_send_wr[MAX_R_WRS];
-  struct ibv_sge r_send_sgl[MAX_BCAST_BATCH];
-  struct ibv_wc r_recv_wc[MAX_RECV_R_WRS];
-  struct ibv_recv_wr r_recv_wr[MAX_RECV_R_WRS];
-  struct ibv_sge r_recv_sgl[MAX_RECV_R_WRS];
-
-  // R_REP_QP_ID 1: send Read Replies  -- receive Read Replies
-  struct ibv_send_wr r_rep_send_wr[MAX_R_REP_WRS];
-  struct ibv_sge r_rep_send_sgl[MAX_R_REP_WRS];
-  struct ibv_wc r_rep_recv_wc[MAX_RECV_R_REP_WRS];
-  struct ibv_recv_wr r_rep_recv_wr[MAX_RECV_R_REP_WRS];
-  struct ibv_sge r_rep_recv_sgl[MAX_RECV_R_REP_WRS];
-
-  // W_QP_ID 2: Send Writes receive Writes
-  struct ibv_send_wr w_send_wr[MAX_W_WRS];
-  struct ibv_sge w_send_sgl[MAX_BCAST_BATCH];
-  struct ibv_wc w_recv_wc[MAX_RECV_W_WRS];
-  struct ibv_recv_wr w_recv_wr[MAX_RECV_W_WRS];
-  struct ibv_sge w_recv_sgl[MAX_RECV_W_WRS];
-
-  // ACK_QP_ID 3: send ACKs -- receive ACKs
-  struct ibv_send_wr ack_send_wr[MAX_ACK_WRS];
-  struct ibv_sge ack_send_sgl[MAX_ACK_WRS];
-  struct ibv_wc ack_recv_wc[MAX_RECV_ACK_WRS];
-  struct ibv_recv_wr ack_recv_wr[MAX_RECV_ACK_WRS];
-  struct ibv_sge ack_recv_sgl[MAX_RECV_ACK_WRS];
-
-
- 	uint16_t credits[VC_NUM][MACHINE_NUM];
+  ctx->appl_ctx = (void*) set_up_pending_ops(ctx);
   uint64_t r_br_tx = 0, w_br_tx = 0, r_rep_tx = 0, ack_tx = 0;
 	uint32_t trace_iter = 0;
 
-  recv_info_t *r_recv_info, *r_rep_recv_info, *w_recv_info, *ack_recv_info;
 
-  r_recv_info = init_recv_info(mcast_lkey, r_buf_push_ptr, R_BUF_SLOTS,
-                               (uint32_t) R_RECV_SIZE, 0, r_recv_qp,
-                               MAX_RECV_R_WRS, r_recv_wr, r_recv_sgl,
-                               (void*) r_buffer);
-
-  r_rep_recv_info = init_recv_info(lkey, r_rep_buf_push_ptr, R_REP_BUF_SLOTS,
-                                   (uint32_t) R_REP_RECV_SIZE, 0, cb->dgram_qp[R_REP_QP_ID],
-                                   MAX_RECV_R_REP_WRS, r_rep_recv_wr, r_rep_recv_sgl,
-                                   (void*) r_rep_buffer);
-
-  w_recv_info = init_recv_info(mcast_lkey, w_buf_push_ptr, W_BUF_SLOTS,
-                               (uint32_t) W_RECV_SIZE, MAX_RECV_W_WRS,  w_recv_qp,
-                               MAX_RECV_W_WRS, w_recv_wr, w_recv_sgl,
-                               (void*) w_buffer);
-
-  ack_recv_info = init_recv_info(lkey, ack_buf_push_ptr, ACK_BUF_SLOTS,
-                                 (uint32_t) ACK_RECV_SIZE, 0, cb->dgram_qp[ACK_QP_ID],
-                                 MAX_RECV_ACK_WRS, ack_recv_wr, ack_recv_sgl,
-                                 (void*) ack_buffer);
 
   ack_mes_t acks[MACHINE_NUM] = {0};
   for (uint16_t i = 0; i < MACHINE_NUM; i++) {
     acks[i].m_id = (uint8_t) machine_id;
     acks[i].opcode = OP_ACK;
   }
-  p_ops_t *p_ops;
-  struct ibv_mr *r_mr, *w_mr, *r_rep_mr;
-  p_ops = set_up_pending_ops(PENDING_WRITES, PENDING_READS, w_send_wr, r_send_wr, credits, t_id);
-  void *r_fifo_buf = p_ops->r_fifo->r_message;
-  void *w_fifo_buf = p_ops->w_fifo->w_message;
-  void *r_rep_fifo_buf = (void *)p_ops->r_rep_fifo->r_rep_message;
-  set_up_mr(&r_mr, r_fifo_buf, R_ENABLE_INLINING, (uint32_t) R_FIFO_SIZE * ALIGNED_R_SEND_SIDE, cb);
-  set_up_mr(&w_mr, w_fifo_buf, W_ENABLE_INLINING, (uint32_t) W_FIFO_SIZE * ALIGNED_W_SEND_SIDE, cb);
-  set_up_mr(&r_rep_mr, r_rep_fifo_buf, R_REP_ENABLE_INLINING, (uint32_t) R_REP_FIFO_SIZE * ALIGNED_R_REP_SEND_SIDE, cb);
+  p_ops_t *p_ops = (p_ops_t *) ctx->appl_ctx;
+
 
   trace_op_t *ops = (trace_op_t *) calloc(MAX_OP_BATCH, sizeof(trace_op_t));
   randomize_op_values(ops, t_id);
   kv_resp_t *resp = (kv_resp_t *) malloc(MAX_OP_BATCH * sizeof(kv_resp_t));
-  set_up_bcast_WRs(w_send_wr, w_send_sgl, r_send_wr, r_send_sgl,
-                   t_id, cb, w_mr, r_mr, mcast_cb);
-  set_up_ack_n_r_rep_WRs(ack_send_wr, ack_send_sgl, r_rep_send_wr, r_rep_send_sgl,
-                         cb, r_rep_mr, acks, t_id);
-  set_up_credits(credits);
-  assert(credits[R_VC][0] == R_CREDITS && credits[W_VC][0] == W_CREDITS);
+
 	// TRACE
 	trace_t *trace;
   if (!ENABLE_CLIENTS)
@@ -186,10 +113,10 @@ void *worker(void *arg)
 	------------------------------START LOOP--------------------------------
 	---------------------------------------------------------------------------*/
 	while(true) {
-     if (ENABLE_ASSERTIONS && CHECK_DBG_COUNTERS)
-       check_debug_cntrs(credit_debug_cnt, waiting_dbg_counter, p_ops,
-                         (void *) cb->dgram_buf, r_buf_pull_ptr,
-                         w_buf_pull_ptr, ack_buf_pull_ptr, r_rep_buf_pull_ptr, t_id);
+     //if (ENABLE_ASSERTIONS && CHECK_DBG_COUNTERS)
+     //  check_debug_cntrs(credit_debug_cnt, waiting_dbg_counter, p_ops,
+     //                    (void *) cb->dgram_buf, r_buf_pull_ptr,
+     //                    w_buf_pull_ptr, ack_buf_pull_ptr, r_rep_buf_pull_ptr, t_id);
 
 
 
@@ -201,7 +128,7 @@ void *worker(void *arg)
       if (t_id == 0) my_printf(green, "Worker %u is back\n", t_id);
     }
     if (ENABLE_INFO_DUMP_ON_STALL && print_for_debug) {
-      print_verbouse_debug_info(p_ops, t_id, credits);
+      //print_verbouse_debug_info(p_ops, t_id, credits);
     }
     if (ENABLE_ASSERTIONS) {
       if (ENABLE_ASSERTIONS && t_id == 0)  time_approx++;
@@ -227,54 +154,48 @@ void *worker(void *arg)
     /* ---------------------------------------------------------------------------
 		------------------------------ POLL FOR WRITES--------------------------
 		---------------------------------------------------------------------------*/
-    poll_for_writes(w_buffer, &w_buf_pull_ptr, p_ops, w_recv_cq,
-                    w_recv_wc, w_recv_info, acks, &completed_but_not_polled_writes, t_id);
+    poll_for_writes(ctx, W_QP_ID, acks);
 
     /* ---------------------------------------------------------------------------
        ------------------------------ SEND ACKS----------------------------------
        ---------------------------------------------------------------------------*/
 
-    send_acks(ack_send_wr, &ack_tx, cb,  w_recv_info, acks, t_id);
+    send_acks(ctx, acks);
 
     /* ---------------------------------------------------------------------------
 		------------------------------ POLL FOR READS--------------------------
 		---------------------------------------------------------------------------*/
-    poll_for_reads(r_buffer, &r_buf_pull_ptr, p_ops, r_recv_cq,
-                    r_recv_wc, t_id, waiting_dbg_counter);
+    poll_for_reads(ctx);
 
     /* ---------------------------------------------------------------------------
 		------------------------------ SEND READ REPLIES--------------------------
 		---------------------------------------------------------------------------*/
 
-    send_r_reps(p_ops, cb, r_rep_send_wr, r_rep_send_sgl, r_recv_info, w_recv_info, &r_rep_tx, t_id);
+    send_r_reps(ctx);
 
     /* ---------------------------------------------------------------------------
 		------------------------------ POLL FOR READ REPLIES--------------------------
 		---------------------------------------------------------------------------*/
 
-    poll_for_read_replies(r_rep_buffer, &r_rep_buf_pull_ptr, p_ops, credits,
-                          cb->dgram_recv_cq[R_REP_QP_ID], r_rep_recv_wc,
-                          r_rep_recv_info, t_id, &outstanding_reads, waiting_dbg_counter);
+    poll_for_read_replies(ctx);
 
     /* ---------------------------------------------------------------------------
 		------------------------------ COMMIT READS----------------------------------
 		---------------------------------------------------------------------------*/
     // Either commit a read or convert it into a write
-    commit_reads(p_ops, &latency_info, t_id);
+    commit_reads(p_ops, &latency_info, ctx->t_id);
 
     /* ---------------------------------------------------------------------------
 		------------------------------ INSPECT RMWS----------------------------------
 		---------------------------------------------------------------------------*/
-    inspect_rmws(p_ops, t_id);
+    inspect_rmws(p_ops, ctx->t_id);
 
     /* ---------------------------------------------------------------------------
     ------------------------------ POLL FOR ACKS--------------------------------
     ---------------------------------------------------------------------------*/
-    poll_acks(ack_buffer, &ack_buf_pull_ptr, p_ops, credits, cb->dgram_recv_cq[ACK_QP_ID],
-              ack_recv_wc, ack_recv_info, &latency_info,
-              t_id, waiting_dbg_counter, &outstanding_writes);
+    poll_acks(ctx);
 
-    remove_writes(p_ops, &latency_info, t_id);
+    remove_writes(p_ops, &latency_info, ctx->t_id);
 
     /* ---------------------------------------------------------------------------
     ------------------------------PROBE THE CACHE--------------------------------------
@@ -282,7 +203,7 @@ void *worker(void *arg)
 
     // Get a new batch from the trace, pass it through the kvs and create
     // the appropriate write/r_rep messages
-    trace_iter = batch_requests_to_KVS(t_id,
+    trace_iter = batch_requests_to_KVS(ctx, t_id,
                                        trace_iter, trace, ops,
                                        p_ops, resp, &latency_info,
                                        ses_dbg, &last_session, &sizes_dbg_cntr);
@@ -290,18 +211,14 @@ void *worker(void *arg)
 		------------------------------BROADCAST READS--------------------------
 		---------------------------------------------------------------------------*/
     // Perform the r_rep broadcasts
-    broadcast_reads(p_ops, credits, cb, credit_debug_cnt, time_out_cnt,
-                    r_send_sgl, r_send_wr,
-                    &r_br_tx, r_rep_recv_info, t_id, &outstanding_reads);
+    broadcast_reads(ctx);
 
 
    /* ---------------------------------------------------------------------------
 		------------------------------BROADCAST WRITES--------------------------
 		---------------------------------------------------------------------------*/
     // Perform the write broadcasts
-    broadcast_writes(p_ops, credits, cb, &release_rdy_dbg_cnt, time_out_cnt,
-                     w_send_sgl, r_send_wr, w_send_wr, &w_br_tx,
-                     ack_recv_info, r_rep_recv_info, t_id, &outstanding_writes, &debug_lids);
+    broadcast_writes(ctx, &release_rdy_dbg_cnt, &debug_lids);
 	}
 	return NULL;
 }

@@ -45,10 +45,12 @@ static inline int find_how_many_write_messages_can_be_polled(struct ibv_cq *w_re
 
 
 // Form the  work request for the read reply
-static inline void forge_r_rep_wr(uint32_t r_rep_pull_ptr, uint16_t mes_i, p_ops_t *p_ops,
-                                  hrd_ctrl_blk_t *cb, struct ibv_sge *send_sgl,
-                                  struct ibv_send_wr *send_wr, uint64_t *r_rep_tx,
-                                  uint16_t t_id) {
+static inline void forge_r_rep_wr(uint32_t r_rep_pull_ptr, uint16_t mes_i, context_t *ctx) {
+
+  per_qp_meta_t *qp_meta = &ctx->qp_meta[R_REP_QP_ID];
+  p_ops_t *p_ops = (p_ops_t *) ctx->appl_ctx;
+  struct ibv_sge *send_sgl = qp_meta->send_sgl;
+  struct ibv_send_wr *send_wr = qp_meta->send_wr;
 
   struct r_rep_fifo *r_rep_fifo = p_ops->r_rep_fifo;
   struct r_rep_message *r_rep_mes = (struct r_rep_message *) &r_rep_fifo->r_rep_message[r_rep_pull_ptr];
@@ -59,24 +61,25 @@ static inline void forge_r_rep_wr(uint32_t r_rep_pull_ptr, uint16_t mes_i, p_ops
   send_sgl[mes_i].addr = (uint64_t) (uintptr_t) r_rep_mes;
 
   checks_and_prints_when_forging_r_rep_wr(coalesce_num, mes_i, send_sgl, r_rep_pull_ptr,
-                                          r_rep_mes, r_rep_fifo, t_id);
+                                          r_rep_mes, r_rep_fifo, ctx->t_id);
   uint8_t rm_id = r_rep_fifo->rem_m_id[r_rep_pull_ptr];
-  send_wr[mes_i].wr.ud.ah = rem_qp[rm_id][t_id][R_REP_QP_ID].ah;
-  send_wr[mes_i].wr.ud.remote_qpn = (uint32) rem_qp[rm_id][t_id][R_REP_QP_ID].qpn;
-  selective_signaling_for_unicast(r_rep_tx, R_REP_SS_BATCH, send_wr,
-                                  mes_i, cb->dgram_send_cq[R_REP_QP_ID], R_REP_ENABLE_INLINING, "sending r_reps", t_id);
+  send_wr[mes_i].wr.ud.ah = rem_qp[rm_id][ctx->t_id][R_REP_QP_ID].ah;
+  send_wr[mes_i].wr.ud.remote_qpn = (uint32) rem_qp[rm_id][ctx->t_id][R_REP_QP_ID].qpn;
+  selective_signaling_for_unicast(&qp_meta->sent_tx, qp_meta->ss_batch, send_wr,
+                                  mes_i, qp_meta->send_cq, qp_meta->enable_inlining,
+                                  qp_meta->send_string, ctx->t_id);
   if (mes_i > 0) send_wr[mes_i - 1].next = &send_wr[mes_i];
 }
 
 
 
 // Form the Broadcast work request for the red
-static inline void forge_r_wr(uint32_t r_mes_i, p_ops_t *p_ops,
-                              quorum_info_t *q_info,
-                              hrd_ctrl_blk_t *cb, struct ibv_sge *send_sgl,
-                              struct ibv_send_wr *send_wr, uint64_t *r_br_tx,
-                              uint16_t br_i, uint16_t credits[][MACHINE_NUM],
-                              uint8_t vc, uint16_t t_id) {
+static inline void forge_r_wr(uint32_t r_mes_i, context_t *ctx,
+                              uint16_t br_i)
+{
+  per_qp_meta_t *qp_meta = &ctx->qp_meta[R_QP_ID];
+  p_ops_t *p_ops = (p_ops_t *) ctx->appl_ctx;
+  struct ibv_sge *send_sgl = qp_meta->send_sgl;
   uint16_t i;
   struct r_message *r_mes = (struct r_message *) &p_ops->r_fifo->r_message[r_mes_i];
   r_mes_info_t *info = &p_ops->r_fifo->info[r_mes_i];
@@ -86,22 +89,22 @@ static inline void forge_r_wr(uint32_t r_mes_i, p_ops_t *p_ops,
   send_sgl[br_i].length = info->message_size;
   send_sgl[br_i].addr = (uint64_t) (uintptr_t) r_mes;
   if (ENABLE_ADAPTIVE_INLINING)
-    adaptive_inlining(send_sgl[br_i].length, &send_wr[br_i * MESSAGES_IN_BCAST], MESSAGES_IN_BCAST);
+    adaptive_inlining(send_sgl[br_i].length, &qp_meta->send_wr[br_i * MESSAGES_IN_BCAST], MESSAGES_IN_BCAST);
   if (ENABLE_ASSERTIONS) {
     assert(coalesce_num > 0);
     assert(send_sgl[br_i].length <= R_SEND_SIZE);
   }
   if (DEBUG_READS && all_reads)
     my_printf(green, "Wrkr %d : I BROADCAST a read message %d of %u reads with mes_size %u, with credits: %d, lid: %u  \n",
-              t_id, r_mes->read[coalesce_num - 1].opcode, coalesce_num, send_sgl[br_i].length,
-              credits[vc][(machine_id + 1) % MACHINE_NUM], r_mes->l_id);
+              ctx->t_id, r_mes->read[coalesce_num - 1].opcode, coalesce_num, send_sgl[br_i].length,
+              qp_meta->credits[(machine_id + 1) % MACHINE_NUM], r_mes->l_id);
   else if (DEBUG_RMW) {
     //struct prop_message *prop_mes = (struct prop_message *) r_mes;
     struct propose *prop = (struct propose *) &r_mes->read[0];
     my_printf(green, "Wrkr %u : I BROADCAST a propose message %u with %u props with mes_size %u, with credits: %d, lid: %u, "
                 "rmw_id %u, glob_sess id %u, log_no %u, version %u \n",
-              t_id, prop->opcode, coalesce_num, send_sgl[br_i].length,
-              credits[vc][(machine_id + 1) % MACHINE_NUM], r_mes->l_id,
+              ctx->t_id, prop->opcode, coalesce_num, send_sgl[br_i].length,
+              qp_meta->credits[(machine_id + 1) % MACHINE_NUM], r_mes->l_id,
               prop->t_rmw_id, prop->t_rmw_id % GLOBAL_SESSION_NUM,
               prop->log_no, prop->ts.version);
   }
@@ -120,49 +123,52 @@ static inline void forge_r_wr(uint32_t r_mes_i, p_ops_t *p_ops,
   if (ENABLE_ASSERTIONS) {
     //assert(send_wr[get_last_message_of_bcast((br_i + 1), q_info)].sg_list == &send_sgl[br_i]);
   }
-  form_bcast_links(r_br_tx, R_BCAST_SS_BATCH, p_ops->q_info, br_i,
-                   send_wr, cb->dgram_send_cq[R_QP_ID], "forging reads", t_id);
+  form_bcast_links(&qp_meta->sent_tx, qp_meta->ss_batch, ctx->q_info, br_i,
+                   qp_meta->send_wr, qp_meta->send_cq, qp_meta->send_string,
+                   ctx->t_id);
 }
 
 
 // Form the Broadcast work request for the write
-static inline void forge_w_wr(uint32_t w_mes_i, p_ops_t *p_ops,
-                              hrd_ctrl_blk_t *cb, struct ibv_sge *send_sgl,
-                              struct ibv_send_wr *send_wr, uint64_t *w_br_tx,
-                              uint16_t br_i, uint16_t credits[][MACHINE_NUM],
-                              uint8_t vc, uint16_t t_id) {
-  struct w_message *w_mes = (struct w_message *) &p_ops->w_fifo->w_message[w_mes_i];
+static inline void forge_w_wr(uint32_t w_mes_i, context_t *ctx,
+                              uint16_t br_i)
+{
+  per_qp_meta_t *qp_meta = &ctx->qp_meta[W_QP_ID];
+  p_ops_t *p_ops = (p_ops_t *) ctx->appl_ctx;
+  struct ibv_sge *send_sgl = qp_meta->send_sgl;
+  w_mes_t *w_mes = (w_mes_t *) &p_ops->w_fifo->w_message[w_mes_i];
   w_mes_info_t *info = &p_ops->w_fifo->info[w_mes_i];
   uint8_t coalesce_num = w_mes->coalesce_num;
   uint32_t backward_ptr = info->backward_ptr;
   send_sgl[br_i].length = info->message_size;
   send_sgl[br_i].addr = (uint64_t) (uintptr_t) w_mes;
   if (ENABLE_ADAPTIVE_INLINING)
-    adaptive_inlining(send_sgl[br_i].length, &send_wr[br_i * MESSAGES_IN_BCAST], MESSAGES_IN_BCAST);
+    adaptive_inlining(send_sgl[br_i].length, &qp_meta->send_wr[br_i * MESSAGES_IN_BCAST], MESSAGES_IN_BCAST);
   // Set the w_state for each write and perform checks
 
   set_w_state_for_each_write(p_ops, info, w_mes, backward_ptr, coalesce_num,
-                             send_sgl, br_i, p_ops->q_info, t_id);
+                             send_sgl, br_i, ctx->q_info, ctx->t_id);
 
   if (DEBUG_WRITES)
     my_printf(green, "Wrkr %d : I BROADCAST a write message %d of %u writes with mes_size %u,"
                 " with credits: %d, lid: %u  \n",
-              t_id, w_mes->write[0].opcode, coalesce_num, send_sgl[br_i].length,
-              credits[vc][(machine_id + 1) % MACHINE_NUM], w_mes->l_id);
+              ctx->t_id, w_mes->write[0].opcode, coalesce_num, send_sgl[br_i].length,
+              qp_meta->credits[(machine_id + 1) % MACHINE_NUM], w_mes->l_id);
 
   if (DEBUG_RMW) {
     struct accept *acc = (struct accept *) &w_mes->write[0];
     my_printf(green, "Wrkr %d : I BROADCAST a message %d of %u accepts with mes_size %u, "
                 "with credits: %d, lid: %u , "
                 "rmw_id %u, glob_sess id %u, log_no %u, version %u  \n",
-              t_id, acc->opcode, coalesce_num,
-              send_sgl[br_i].length,  credits[vc][(machine_id + 1) % MACHINE_NUM], acc->l_id,
+              ctx->t_id, acc->opcode, coalesce_num,
+              send_sgl[br_i].length,  qp_meta->credits[(machine_id + 1) % MACHINE_NUM], acc->l_id,
               acc->t_rmw_id, (uint32_t) acc->t_rmw_id % GLOBAL_SESSION_NUM,
               acc->log_no, acc->ts.version);
   }
 
-  form_bcast_links(w_br_tx, W_BCAST_SS_BATCH, p_ops->q_info, br_i,
-                   send_wr, cb->dgram_send_cq[W_QP_ID], "forging writes", t_id);
+  form_bcast_links(&qp_meta->sent_tx, qp_meta->ss_batch, ctx->q_info, br_i,
+                   qp_meta->send_wr, qp_meta->send_cq, qp_meta->send_string,
+                   ctx->t_id);
 
 }
 
