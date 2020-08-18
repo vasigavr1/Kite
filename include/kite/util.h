@@ -1,7 +1,7 @@
 #ifndef KITE_UTILS_H
 #define KITE_UTILS_H
 
-#include "../../../shared/include/multicast/multicast.h"
+#include "multicast.h"
 #include "kvs.h"
 #include "hrd.h"
 #include "main.h"
