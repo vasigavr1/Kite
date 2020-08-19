@@ -950,15 +950,30 @@ static inline void insert_r_rep(p_ops_t *p_ops, uint64_t l_id, uint16_t t_id,
   finish_r_rep_bookkeeping(p_ops, r_rep, false, rem_m_id, t_id);
 }
 
+static inline void check_dbg_counter(context_t *ctx,
+                                     uint16_t writes_num,
+                                     uint16_t reads_num)
+{
+  if (ENABLE_ASSERTIONS) {
+    p_ops_t* p_ops = (p_ops_t*) ctx->appl_ctx;
 
+    p_ops->debug_loop->sizes_dbg_cntr++;
+    if (p_ops->debug_loop->sizes_dbg_cntr == M_32) {
+      p_ops->debug_loop->sizes_dbg_cntr = 0;
+      printf("Wrkr %u breaking due to max allowed capacity r_size %u/%d w_size %u/%u \n",
+             ctx->t_id, p_ops->virt_r_size + reads_num, MAX_ALLOWED_R_SIZE,
+             p_ops->virt_w_size + writes_num, MAX_ALLOWED_W_SIZE);
+    }
+  }
+}
 
 // Fill the trace_op to be passed to the KVS. Returns whether no more requests can be processed
 static inline bool fill_trace_op(context_t *ctx,
                                  p_ops_t *p_ops, trace_op_t *op,
                                  trace_t *trace,
-                                 uint16_t op_i, int working_session, uint16_t *writes_num_, uint16_t *reads_num_,
-                                 struct session_dbg *ses_dbg,latency_info_t *latency_info,
-                                 uint32_t *sizes_dbg_cntr,
+                                 uint16_t op_i, int working_session,
+                                 uint16_t *writes_num_, uint16_t *reads_num_,
+                                 latency_info_t *latency_info,
                                  uint16_t t_id)
 {
   create_inputs_of_op(&op->value_to_write, &op->value_to_read, &op->real_val_len,
@@ -974,17 +989,9 @@ static inline bool fill_trace_op(context_t *ctx,
     reads_num += op->opcode == (uint8_t) OP_ACQUIRE ? 2 : 1;
     if (p_ops->virt_w_size + writes_num >= MAX_ALLOWED_W_SIZE ||
         p_ops->virt_r_size + reads_num >= MAX_ALLOWED_R_SIZE) {
-      if (ENABLE_ASSERTIONS) {
-        (*sizes_dbg_cntr)++;
-        if (*sizes_dbg_cntr == M_32) {
-          *sizes_dbg_cntr = 0;
-          printf("Wrkr %u breaking due to max allowed capacity r_size %u/%d w_size %u/%u \n",
-                 t_id, p_ops->virt_r_size + reads_num, MAX_ALLOWED_R_SIZE,
-                 p_ops->virt_w_size + writes_num, MAX_ALLOWED_W_SIZE);
-        }
-      }
+      check_dbg_counter(ctx, writes_num, reads_num);
       return true;
-    } else if (ENABLE_ASSERTIONS) *sizes_dbg_cntr = 0;
+    } else if (ENABLE_ASSERTIONS) p_ops->debug_loop->sizes_dbg_cntr = 0;
   }
   bool is_update = (op->opcode == (uint8_t) KVS_OP_PUT ||
                     op->opcode == (uint8_t) OP_RELEASE);
@@ -1016,8 +1023,12 @@ static inline bool fill_trace_op(context_t *ctx,
   }
   op->session_id = (uint16_t) working_session;
 
-  if (ENABLE_ASSERTIONS && DEBUG_SESSIONS) ses_dbg->dbg_cnt[working_session] = 0;
-  if (MEASURE_LATENCY) start_measurement(latency_info, (uint32_t) working_session, t_id, op->opcode);
+  if (ENABLE_ASSERTIONS && DEBUG_SESSIONS)
+    p_ops->debug_loop->ses_dbg->dbg_cnt[working_session] = 0;
+  if (MEASURE_LATENCY) {
+    assert(false);
+    start_measurement(latency_info, (uint32_t) working_session, t_id, op->opcode);
+  }
 
   //if (w_pull_ptr[[working_session]] == 100000) my_printf(yellow, "Working ses %u \n", working_session);
   //my_printf(yellow, "BEFORE: OP_i %u -> session %u, opcode: %u \n", op_i, working_session, ops[op_i].opcode);
@@ -1135,8 +1146,9 @@ static inline void set_w_state_for_each_write(p_ops_t *p_ops, w_mes_info_t *info
 
 
 static inline bool release_not_ready(p_ops_t *p_ops,
-                                     w_mes_info_t *info, struct w_message *w_mes,
-                                     uint32_t *release_rdy_dbg_cnt, uint16_t t_id)
+                                     w_mes_info_t *info,
+                                     struct w_message *w_mes,
+                                     uint16_t t_id)
 {
   if (TURN_OFF_KITE) return false;
   if (!info->is_release)
@@ -1150,17 +1162,17 @@ static inline bool release_not_ready(p_ops_t *p_ops,
       if (!sess_info->ready_to_release) {
         if (ENABLE_ASSERTIONS) {
           assert(sess_info->live_writes > 0);
-          (*release_rdy_dbg_cnt)++;
-          if (*release_rdy_dbg_cnt == M_4) {
+          p_ops->debug_loop->release_rdy_dbg_cnt++;
+          if (p_ops->debug_loop->release_rdy_dbg_cnt == M_4) {
             if (t_id == 0) printf("Wrkr %u stuck. Release cannot fire \n", t_id);
-            (*release_rdy_dbg_cnt) = 0;
+            p_ops->debug_loop->release_rdy_dbg_cnt = 0;
           }
         }
         return true; // release is not ready yet
       }
     }
   }
-  if (ENABLE_ASSERTIONS) (*release_rdy_dbg_cnt) = 0;
+  if (ENABLE_ASSERTIONS) p_ops->debug_loop->release_rdy_dbg_cnt = 0;
   return false; // release is ready
 }
 

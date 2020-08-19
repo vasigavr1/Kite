@@ -1,4 +1,5 @@
 #include <rdma_gen_util.h>
+#include <trace_util.h>
 #include "util.h"
 #include "generic_inline_util.h"
 
@@ -208,7 +209,19 @@ void dump_stats_2_file(struct stats* st){
     fclose(fp);
 }
 
-
+// If reading CAS rmws out of the trace, CASes that compare against 0 succeed the rest fail
+void randomize_op_values(trace_op_t *ops, uint16_t t_id)
+{
+  if (!ENABLE_CLIENTS) {
+    for (uint16_t i = 0; i < MAX_OP_BATCH; i++) {
+      if (TRACE_ONLY_FA)
+        ops[i].value[0] = 1;
+      else if (rand() % 1000 < RMW_CAS_CANCEL_RATIO)
+        memset(ops[i].value, 1, VALUE_SIZE);
+      else memset(ops[i].value, 0, VALUE_SIZE);
+    }
+  }
+}
 
 
 /* ---------------------------------------------------------------------------
@@ -274,7 +287,54 @@ quorum_info_t* set_up_q_info(struct ibv_send_wr *w_send_wr,
 
 }
 
+void kite_init_qp_meta(context_t *ctx)
+{
+  per_qp_meta_t *qp_meta = ctx->qp_meta;
+  create_per_qp_meta(&qp_meta[R_QP_ID], MAX_R_WRS,
+                     MAX_RECV_R_WRS, SEND_BCAST_RECV_BCAST,  RECV_REQ,
+                     REM_MACH_NUM, REM_MACH_NUM, R_BUF_SLOTS,
+                     R_RECV_SIZE, R_SEND_SIZE, ENABLE_MULTICAST, ENABLE_MULTICAST,
+                     R_SEND_MCAST_QP, 0, R_FIFO_SIZE,
+                     R_CREDITS, R_MES_HEADER,
+                     "send reads", "recv reads");
 
+  ///
+  create_per_qp_meta(&qp_meta[W_QP_ID], MAX_W_WRS,
+                     MAX_RECV_W_WRS, SEND_BCAST_RECV_BCAST,  RECV_REQ,
+                     REM_MACH_NUM, REM_MACH_NUM, W_BUF_SLOTS,
+                     W_RECV_SIZE, W_SEND_SIZE, ENABLE_MULTICAST, ENABLE_MULTICAST,
+                     W_SEND_MCAST_QP, 0, W_FIFO_SIZE,
+                     W_CREDITS, W_MES_HEADER,
+                     "send writes", "recv writes");
+  ///
+  create_per_qp_meta(&qp_meta[R_REP_QP_ID], MAX_R_REP_WRS,
+                     MAX_RECV_R_REP_WRS, SEND_UNI_REP_RECV_UNI_REP, RECV_REPLY,
+                     REM_MACH_NUM, REM_MACH_NUM, R_REP_BUF_SLOTS,
+                     R_REP_RECV_SIZE, R_REP_SEND_SIZE, false, false,
+                     0, 0, R_REP_FIFO_SIZE,
+                     0, R_REP_MES_HEADER,
+                     "send r_reps", "recv r_reps");
+  ///
+
+  ///
+  create_per_qp_meta(&qp_meta[ACK_QP_ID], MAX_ACK_WRS, MAX_RECV_ACK_WRS,
+                     SEND_UNI_REP_RECV_UNI_REP,
+                     RECV_REPLY,
+                     REM_MACH_NUM, REM_MACH_NUM, ACK_BUF_SLOTS,
+                     ACK_RECV_SIZE, ACK_SIZE, false, false,
+                     0, 0, 0, 0, 0,
+                     "send acks", "recv acks");
+}
+
+kite_debug_t *init_debug_loop_struct()
+{
+  kite_debug_t *loop_dbg = calloc(1, sizeof(kite_debug_t));
+  if (DEBUG_SESSIONS) {
+    loop_dbg->ses_dbg = (struct session_dbg *) malloc(sizeof(struct session_dbg));
+    memset(loop_dbg->ses_dbg, 0, sizeof(struct session_dbg));
+  }
+  return loop_dbg;
+}
 // Initialize the pending ops struct
 p_ops_t* set_up_pending_ops(context_t *ctx)
 {
@@ -316,11 +376,18 @@ p_ops_t* set_up_pending_ops(context_t *ctx)
     //(struct w_message_template *) calloc((size_t)W_FIFO_SIZE, (size_t) ALIGNED_W_SEND_SIDE);
 
   // R_FIFO
-
   p_ops->r_fifo = (struct read_fifo *) calloc(1, sizeof(struct read_fifo));
   fifo_t *r_send_fifo = ctx->qp_meta[R_QP_ID].send_fifo;
   assert(r_send_fifo->max_byte_size == R_FIFO_SIZE * ALIGNED_R_SEND_SIDE);
   p_ops->r_fifo->r_message = (struct r_message_template *) r_send_fifo->fifo; //calloc(R_FIFO_SIZE, (size_t) ALIGNED_R_SEND_SIDE);
+
+  p_ops->ack_send_buf = (ack_mes_t *) calloc(MACHINE_NUM, sizeof(ack_mes_t));
+  for (i = 0; i < MACHINE_NUM; i++) {
+    p_ops->ack_send_buf[i].m_id = (uint8_t) machine_id;
+    p_ops->ack_send_buf[i].opcode = OP_ACK;
+    ctx->qp_meta[ACK_QP_ID].send_wr[i].sg_list->addr =
+      (uintptr_t) &p_ops->ack_send_buf[i];
+  }
 
 
   // PREP STRUCT
@@ -351,9 +418,6 @@ p_ops_t* set_up_pending_ops(context_t *ctx)
   p_ops->coalesce_r_rep =
     (bool *) malloc(max_incoming_w_r* sizeof(bool));
 
-
-  // PTRS to W_OPS
-  //p_ops->ptrs_to_w_ops = (write_t **) malloc(MAX_INCOMING_W * sizeof(write_t *));
   // PTRS to R_OPS
   p_ops->ptrs_to_mes_ops = (void **) malloc(max_incoming_w_r * sizeof(struct read *));
   // PTRS to local ops to find the write after sending the first round of a release
@@ -367,10 +431,6 @@ p_ops_t* set_up_pending_ops(context_t *ctx)
   for (i = 0; i < W_FIFO_SIZE; i++) {
     struct w_message *w_mes = (struct w_message *) &p_ops->w_fifo->w_message[i];
     w_mes->m_id = (uint8_t) machine_id;
-//    for (j = 0; j < MAX_W_COALESCE; j++){
-//      p_ops->w_fifo->w_message[i].write[j].m_id = (uint8_t) machine_id;
-//      p_ops->w_fifo->w_message[i].write[j].val_len = VALUE_SIZE >> SHIFT_BITS;
-//    }
   }
   p_ops->w_fifo->info[0].message_size = W_MES_HEADER;
 
@@ -391,6 +451,15 @@ p_ops_t* set_up_pending_ops(context_t *ctx)
     p_ops->w_meta[i].w_state = INVALID;
     p_ops->ptrs_to_local_w[i] = NULL;
   }
+
+
+  p_ops->ops = (trace_op_t *) calloc(MAX_OP_BATCH, sizeof(trace_op_t));
+  randomize_op_values(p_ops->ops, ctx->t_id);
+  p_ops->resp = (kv_resp_t *) malloc(MAX_OP_BATCH * sizeof(kv_resp_t));
+  if (!ENABLE_CLIENTS)
+    p_ops->trace = trace_init(ctx->t_id);
+
+  p_ops->debug_loop = init_debug_loop_struct();
  return p_ops;
 }
 
@@ -493,17 +562,5 @@ void set_up_credits(uint16_t credits[][MACHINE_NUM])
 
 }
 
-// If reading CAS rmws out of the trace, CASes that compare against 0 succeed the rest fail
-void randomize_op_values(trace_op_t *ops, uint16_t t_id)
-{
-  if (!ENABLE_CLIENTS) {
-    for (uint16_t i = 0; i < MAX_OP_BATCH; i++) {
-      if (TRACE_ONLY_FA)
-        ops[i].value[0] = 1;
-      else if (rand() % 1000 < RMW_CAS_CANCEL_RATIO)
-        memset(ops[i].value, 1, VALUE_SIZE);
-      else memset(ops[i].value, 0, VALUE_SIZE);
-    }
-  }
-}
+
 

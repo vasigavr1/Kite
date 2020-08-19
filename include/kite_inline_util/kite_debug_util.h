@@ -211,7 +211,7 @@ static inline void check_trace_req(p_ops_t *p_ops, trace_t *trace, trace_op_t *o
 
 static inline void debug_and_count_stats_when_broadcasting_writes
   (p_ops_t *p_ops, uint32_t bcast_pull_ptr,
-   uint8_t coalesce_num, uint16_t t_id, uint64_t* expected_l_id_to_send,
+   uint8_t coalesce_num, uint16_t t_id,
    uint16_t br_i, uint32_t *outstanding_writes)
 {
   //bool is_accept = p_ops->w_fifo->w_message[w_pull_ptr].write[0].opcode == ACCEPT_OP;
@@ -413,10 +413,11 @@ static inline void print_and_check_mes_when_polling_r_reps(struct r_rep_message 
 
 
 // Debug session
-static inline void debug_sessions(struct session_dbg *ses_dbg, p_ops_t *p_ops,
+static inline void debug_sessions(p_ops_t *p_ops,
                                   uint32_t sess_id, uint16_t t_id)
 {
   if (DEBUG_SESSIONS && ENABLE_ASSERTIONS) {
+    struct session_dbg *ses_dbg = p_ops->debug_loop->ses_dbg;
     //assert(p_ops->prop_info->entry[sess_id].state != INVALID_RMW);
     ses_dbg->dbg_cnt[sess_id]++;
     if (ses_dbg->dbg_cnt[sess_id] == DEBUG_SESS_COUNTER) {
@@ -428,10 +429,11 @@ static inline void debug_sessions(struct session_dbg *ses_dbg, p_ops_t *p_ops,
 }
 
 // Debug all the session
-static inline void debug_all_sessions(struct session_dbg *ses_dbg, p_ops_t *p_ops,
+static inline void debug_all_sessions(p_ops_t *p_ops,
                                       uint16_t t_id)
 {
   if (DEBUG_SESSIONS && ENABLE_ASSERTIONS) {
+    struct session_dbg *ses_dbg = p_ops->debug_loop->ses_dbg;
     for (uint16_t sess_id = 0; sess_id < SESSIONS_PER_THREAD; sess_id++) {
       assert(p_ops->sess_info[sess_id].stalled);
       ses_dbg->dbg_cnt[sess_id]++;
@@ -1690,7 +1692,7 @@ static inline void checks_stats_prints_when_sending_acks(ack_mes_t *acks,
   if (ENABLE_ASSERTIONS) {
     assert(acks[m_i].credits <= acks[m_i].ack_num);
     if (acks[m_i].ack_num > MAX_MES_IN_WRITE) assert(acks[m_i].credits > 1);
-    assert(acks[m_i].credits <= W_CREDITS);
+    if (!ENABLE_MULTICAST) assert(acks[m_i].credits <= W_CREDITS);
     assert(acks[m_i].ack_num > 0);
   }
 }

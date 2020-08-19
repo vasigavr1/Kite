@@ -57,6 +57,8 @@ void print_latency_stats(void);
 
 //Set up the depths of all QPs
 void set_up_queue_depths(int**, int**);
+
+void kite_init_qp_meta(context_t *ctx);
 // Initialize the struct that holds all pending ops
 p_ops_t* set_up_pending_ops(context_t *ctx);
 // Set up the memory registrations in case inlining is disabled

@@ -253,12 +253,23 @@ struct pending_out_of_epoch_writes {
   uint32_t r_info_ptrs[PENDING_READS]; // ptrs to the read_info struct of p_ops
 };
 
+typedef struct trace_op trace_op_t;
+typedef struct kite_p_ops_debug kite_debug_t;
+
 typedef struct pending_ops {
 	write_fifo_t *w_fifo;
   struct read_fifo *r_fifo;
   struct r_rep_fifo *r_rep_fifo;
+  ack_mes_t *ack_send_buf;
   //write_t **ptrs_to_w_ops; // used for remote writes
   void **ptrs_to_mes_ops; // used for remote reads
+
+  trace_t *trace;
+  uint32_t trace_iter;
+  uint16_t last_session;
+
+  trace_op_t *ops;
+  kv_resp_t *resp;
 
   write_t **ptrs_to_local_w; // used for the first phase of release
   uint8_t *overwritten_values;
@@ -293,6 +304,7 @@ typedef struct pending_ops {
   uint32_t full_w_q_fifo;
   bool all_sessions_stalled;
   quorum_info_t *q_info;
+  kite_debug_t *debug_loop;
 } p_ops_t;
 
 // A helper to debug sessions by remembering which write holds a given session
@@ -301,6 +313,15 @@ struct session_dbg {
 	//uint8_t is_release[SESSIONS_PER_THREAD];
 	//uint32_t request_id[SESSIONS_PER_THREAD];
 };
+
+typedef struct kite_p_ops_debug {
+  bool slept;
+  uint64_t loop_counter;
+  uint32_t sizes_dbg_cntr;
+  uint64_t debug_lids;
+  uint32_t release_rdy_dbg_cnt;
+  struct session_dbg *ses_dbg;
+} kite_debug_t;
 
 // Registering data structure
 extern atomic_uint_fast64_t committed_glob_sess_rmw_id[GLOBAL_SESSION_NUM];

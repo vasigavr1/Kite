@@ -213,7 +213,11 @@ static inline bool ack_bookkeeping(ack_mes_t *ack, uint8_t w_num, uint64_t l_id,
       assert(ack->l_id + ((uint64_t) ack->ack_num) == l_id);
       assert(ack->ack_num < 63000);
       assert(W_CREDITS > 1);
-      assert(ack->credits < W_CREDITS);
+      if (ack->credits > W_CREDITS) {
+        printf("attempting to put %u credits in ack (W_credits = %u)\n",
+               ack->credits, W_CREDITS);
+        assert(ENABLE_MULTICAST);
+      }
     }
     ack->credits++;
     ack->ack_num += w_num;

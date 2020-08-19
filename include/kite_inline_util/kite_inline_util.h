@@ -26,47 +26,48 @@
 //------------------------------ PULL NEW REQUESTS ----------------------------------
 //---------------------------------------------------------------------------*/
 
-static inline uint32_t batch_requests_to_KVS(context_t *ctx, uint16_t t_id,
-                                             uint32_t trace_iter, trace_t *trace,
-                                             trace_op_t *ops,
-                                             p_ops_t *p_ops, kv_resp_t *resp,
-                                             latency_info_t *latency_info,
-                                             struct session_dbg *ses_dbg, uint16_t *last_session_,
-                                             uint32_t *sizes_dbg_cntr)
+static inline void batch_requests_to_KVS(context_t *ctx)
 {
-  uint16_t writes_num = 0, reads_num = 0, op_i = 0, last_session = *last_session_;
+
+  p_ops_t* p_ops = (p_ops_t*) ctx->appl_ctx;
+  trace_op_t *ops = p_ops->ops;
+  kv_resp_t *resp = p_ops->resp;
+  trace_t *trace = p_ops->trace;
+
+  uint16_t writes_num = 0, reads_num = 0, op_i = 0;
   int working_session = -1;
   // if there are clients the "all_sessions_stalled" flag is not used,
   // so we need not bother checking it
   if (!ENABLE_CLIENTS && p_ops->all_sessions_stalled) {
-    debug_all_sessions(ses_dbg, p_ops, t_id);
-    return trace_iter;
+    debug_all_sessions(p_ops, ctx->t_id);
+    return;
   }
   for (uint16_t i = 0; i < SESSIONS_PER_THREAD; i++) {
-    uint16_t sess_i = (uint16_t)((last_session + i) % SESSIONS_PER_THREAD);
-    if (pull_request_from_this_session(p_ops->sess_info[sess_i].stalled, sess_i, t_id)) {
+    uint16_t sess_i = (uint16_t)((p_ops->last_session + i) % SESSIONS_PER_THREAD);
+    if (pull_request_from_this_session(p_ops->sess_info[sess_i].stalled, sess_i, ctx->t_id)) {
       working_session = sess_i;
       break;
     }
-    else debug_sessions(ses_dbg, p_ops, sess_i, t_id);
+    else debug_sessions(p_ops, sess_i, ctx->t_id);
   }
   //printf("working session = %d\n", working_session);
   if (ENABLE_CLIENTS) {
-    if (working_session == -1) return trace_iter;
+    if (working_session == -1) return;
   }
   else if (ENABLE_ASSERTIONS ) assert(working_session != -1);
 
   bool passed_over_all_sessions = false;
   while (op_i < MAX_OP_BATCH && !passed_over_all_sessions) {
-    if (fill_trace_op(ctx, p_ops, &ops[op_i], &trace[trace_iter], op_i, working_session, &writes_num,
-                      &reads_num, ses_dbg, latency_info, sizes_dbg_cntr, t_id))
+    if (fill_trace_op(ctx, p_ops, &ops[op_i], &trace[p_ops->trace_iter],
+                      op_i, working_session, &writes_num,
+                      &reads_num, NULL, ctx->t_id))
       break;
     // Find out next session to work on
     while (!pull_request_from_this_session(p_ops->sess_info[working_session].stalled,
-                                           (uint16_t) working_session, t_id)) {
-      debug_sessions(ses_dbg, p_ops, (uint32_t) working_session, t_id);
+                                           (uint16_t) working_session, ctx->t_id)) {
+      debug_sessions(p_ops, (uint32_t) working_session, ctx->t_id);
       MOD_INCR(working_session, SESSIONS_PER_THREAD);
-      if (working_session == last_session) {
+      if (working_session == p_ops->last_session) {
         passed_over_all_sessions = true;
         // If clients are used the condition does not guarantee that sessions are stalled
         if (!ENABLE_CLIENTS) p_ops->all_sessions_stalled = true;
@@ -76,16 +77,16 @@ static inline uint32_t batch_requests_to_KVS(context_t *ctx, uint16_t t_id,
     resp[op_i].type = EMPTY;
     op_i++;
     if (!ENABLE_CLIENTS) {
-      trace_iter++;
-      if (trace[trace_iter].opcode == NOP) trace_iter = 0;
+      p_ops->trace_iter++;
+      if (trace[p_ops->trace_iter].opcode == NOP) p_ops->trace_iter = 0;
     }
   }
 
 
-  *last_session_ = (uint16_t) working_session;
+  p_ops->last_session = (uint16_t) working_session;
 
-  t_stats[t_id].cache_hits_per_thread += op_i;
-  KVS_batch_op_trace(op_i, t_id, ops, resp, p_ops);
+  t_stats[ctx->t_id].cache_hits_per_thread += op_i;
+  KVS_batch_op_trace(op_i, ctx->t_id, ops, resp, p_ops);
   //my_printf(cyan, "thread %d  adds %d/%d ops\n", t_id, op_i, MAX_OP_BATCH);
   for (uint16_t i = 0; i < op_i; i++) {
     // my_printf(green, "After: OP_i %u -> session %u \n", i, *(uint32_t *) &ops[i]);
@@ -93,7 +94,7 @@ static inline uint32_t batch_requests_to_KVS(context_t *ctx, uint16_t t_id,
       my_printf(green, "KVS miss %u: bkt %u, server %u, tag %u \n", i,
                    ops[i].key.bkt, ops[i].key.server, ops[i].key.tag);
       assert(false);
-      clean_up_on_KVS_miss(&ops[i], p_ops, latency_info, t_id);
+      clean_up_on_KVS_miss(&ops[i], p_ops, NULL, ctx->t_id);
       continue;
     }
     // check_version_after_batching_trace_to_cache(&ops[i], &resp[i], t_id);
@@ -101,27 +102,27 @@ static inline uint32_t batch_requests_to_KVS(context_t *ctx, uint16_t t_id,
     if (resp[i].type == KVS_LOCAL_GET_SUCCESS) {
       //check_state_with_allowed_flags(2, interface[t_id].req_array[ops[i].session_id][ops[i].index_to_req_array].state, IN_PROGRESS_REQ);
       //assert(interface[t_id].req_array[ops[i].session_id][ops[i].index_to_req_array].state == IN_PROGRESS_REQ);
-      signal_completion_to_client(ops[i].session_id, ops[i].index_to_req_array, t_id);
+      signal_completion_to_client(ops[i].session_id, ops[i].index_to_req_array, ctx->t_id);
     }
     // Writes
     else if (resp[i].type == KVS_PUT_SUCCESS) {
-      insert_write(p_ops, &ops[i], FROM_TRACE, 0, t_id);
-      signal_completion_to_client(ops[i].session_id, ops[i].index_to_req_array, t_id);
+      insert_write(p_ops, &ops[i], FROM_TRACE, 0, ctx->t_id);
+      signal_completion_to_client(ops[i].session_id, ops[i].index_to_req_array, ctx->t_id);
     }
     // RMWS
     else if (ENABLE_RMWS && opcode_is_rmw(ops[i].opcode)) {
-       insert_rmw(p_ops, &ops[i], t_id);
+       insert_rmw(p_ops, &ops[i], ctx->t_id);
     }
     // KVS_GET_SUCCESS: Acquires, out-of-epoch reads, KVS_GET_TS_SUCCESS: Releases, out-of-epoch Writes
     else {
       check_state_with_allowed_flags(3, resp[i].type, KVS_GET_SUCCESS, KVS_GET_TS_SUCCESS);
-      insert_read(p_ops, &ops[i], FROM_TRACE, t_id);
+      insert_read(p_ops, &ops[i], FROM_TRACE, ctx->t_id);
       if (ENABLE_ASSERTIONS && ops[i].opcode == KVS_OP_PUT) {
         p_ops->sess_info[ops[i].session_id].writes_not_yet_inserted++;
       }
     }
   }
-  return trace_iter;
+  return;
 }
 
 /* ---------------------------------------------------------------------------
@@ -221,9 +222,7 @@ static inline void inspect_rmws(p_ops_t *p_ops, uint16_t t_id)
 //------------------------------ BROADCASTS ----------------------------------
 //---------------------------------------------------------------------------*/
 // Broadcast Writes
-static inline void broadcast_writes(context_t *ctx,
-                                    uint32_t *release_rdy_dbg_cnt,
-                                    uint64_t *expected_next_l_id)
+static inline void broadcast_writes(context_t *ctx)
 {
   //printf("Worker %d bcasting writes \n", t_id);
   per_qp_meta_t *qp_meta = &ctx->qp_meta[W_QP_ID];
@@ -235,7 +234,7 @@ static inline void broadcast_writes(context_t *ctx,
   uint32_t bcast_pull_ptr = p_ops->w_fifo->bcast_pull_ptr;
   if (p_ops->w_fifo->bcast_size == 0) return;
   if (release_not_ready(p_ops, &p_ops->w_fifo->info[bcast_pull_ptr], (w_mes_t *)
-    &p_ops->w_fifo->w_message[bcast_pull_ptr], release_rdy_dbg_cnt, ctx->t_id))
+    &p_ops->w_fifo->w_message[bcast_pull_ptr], ctx->t_id))
     return;
 
   if (!check_bcast_credits(qp_meta->credits, ctx->q_info,
@@ -247,7 +246,7 @@ static inline void broadcast_writes(context_t *ctx,
   while (p_ops->w_fifo->bcast_size > 0 && mes_sent < available_credits) {
     if (mes_sent >  0 &&
       release_not_ready(p_ops, &p_ops->w_fifo->info[bcast_pull_ptr], (struct w_message *)
-        &p_ops->w_fifo->w_message[bcast_pull_ptr], release_rdy_dbg_cnt, ctx->t_id)) {
+        &p_ops->w_fifo->w_message[bcast_pull_ptr], ctx->t_id)) {
       break;
     }
     if (DEBUG_WRITES)
@@ -258,7 +257,7 @@ static inline void broadcast_writes(context_t *ctx,
     struct w_message *w_mes = (struct w_message *) &p_ops->w_fifo->w_message[bcast_pull_ptr];
       uint8_t coalesce_num = w_mes->coalesce_num;
     debug_and_count_stats_when_broadcasting_writes(p_ops, bcast_pull_ptr, coalesce_num,
-                                                   ctx->t_id, expected_next_l_id, br_i,
+                                                   ctx->t_id, br_i,
                                                    &qp_meta->outstanding_messages);
     p_ops->w_fifo->bcast_size -= coalesce_num;
     // This message has been sent, do not add other writes to it!
@@ -391,10 +390,11 @@ static inline void send_r_reps(context_t *ctx)
 
 
 // Send a batched ack that denotes the first local write id and the number of subsequent lids that are being acked
-static inline void send_acks(context_t *ctx, ack_mes_t *acks)
+static inline void send_acks(context_t *ctx)
 {
   per_qp_meta_t *qp_meta = &ctx->qp_meta[ACK_QP_ID];
   p_ops_t *p_ops = (p_ops_t *) ctx->appl_ctx;
+  ack_mes_t *acks = p_ops->ack_send_buf;
   uint8_t ack_i = 0, prev_ack_i = 0, first_wr = 0;
   struct ibv_send_wr *bad_send_wr;
   uint32_t recvs_to_post_num = 0;
@@ -440,11 +440,13 @@ static inline void send_acks(context_t *ctx, ack_mes_t *acks)
 
 
 // Poll for the write broadcasts
-static inline void poll_for_writes(context_t *ctx, uint16_t qp_id, ack_mes_t *acks)
+static inline void poll_for_writes(context_t *ctx,
+                                   uint16_t qp_id)
 {
   per_qp_meta_t *qp_meta = &ctx->qp_meta[qp_id];
   fifo_t *recv_fifo = qp_meta->recv_fifo;
   p_ops_t *p_ops = (p_ops_t *) ctx->appl_ctx;
+  ack_mes_t *acks = p_ops->ack_send_buf;
   uint32_t writes_for_kvs = 0;
   int completed_messages =
     find_how_many_messages_can_be_polled(qp_meta->recv_cq, qp_meta->recv_wc,
@@ -842,7 +844,7 @@ static inline void poll_for_read_replies(context_t *ctx)
 // Handle the first round of Lin Writes
 // Increment the epoch_id after an acquire that learnt the node has missed messages
 static inline void commit_reads(p_ops_t *p_ops,
-                                latency_info_t * latency_info, uint16_t t_id)
+                                uint16_t t_id)
 {
   uint32_t pull_ptr = p_ops->r_pull_ptr;
   uint16_t writes_for_cache = 0;
@@ -905,7 +907,7 @@ static inline void commit_reads(p_ops_t *p_ops,
 
     // SESSION: Acquires that wont have a second round and thus must free the session
     if (!insert_write_flag && (read_info->opcode == OP_ACQUIRE))
-      read_commit_acquires_free_sess(p_ops, pull_ptr, latency_info, t_id);
+      read_commit_acquires_free_sess(p_ops, pull_ptr, NULL, t_id);
 
     // COMPLETION: Signal completion for reads/acquires that need not write the local KVS or
     // have a second write round (applicable only for acquires)
@@ -923,7 +925,7 @@ static inline void commit_reads(p_ops_t *p_ops,
 
 
 // Remove writes that have seen all acks
-static inline void remove_writes(p_ops_t *p_ops, latency_info_t *latency_info,
+static inline void remove_writes(p_ops_t *p_ops,
                                  uint16_t t_id)
 {
   while(p_ops->w_meta[p_ops->w_pull_ptr].w_state >= READY_PUT) {
@@ -981,5 +983,119 @@ static inline void remove_writes(p_ops_t *p_ops, latency_info_t *latency_info,
 }
 
 
+static inline void kite_checks_at_loop_start(context_t *ctx)
+{
+  p_ops_t *p_ops = (p_ops_t *) ctx->appl_ctx;
+  //if (ENABLE_ASSERTIONS && CHECK_DBG_COUNTERS)
+  //  check_debug_cntrs(credit_debug_cnt, waiting_dbg_counter, p_ops,
+  //                    (void *) cb->dgram_buf, r_buf_pull_ptr,
+  //                    w_buf_pull_ptr, ack_buf_pull_ptr, r_rep_buf_pull_ptr, t_id);
+
+  if (PUT_A_MACHINE_TO_SLEEP && (machine_id == MACHINE_THAT_SLEEPS) &&
+      (t_stats[WORKERS_PER_MACHINE -1].cache_hits_per_thread > 4000000) && (!p_ops->debug_loop->slept)) {
+    uint seconds = 15;
+    if (ctx->t_id == 0) my_printf(yellow, "Workers are going to sleep for %u secs\n", seconds);
+    sleep(seconds); p_ops->debug_loop->slept = true;
+    if (ctx->t_id == 0) my_printf(green, "Worker %u is back\n", ctx->t_id);
+  }
+  if (ENABLE_INFO_DUMP_ON_STALL && print_for_debug) {
+    //print_verbouse_debug_info(p_ops, t_id, credits);
+  }
+  if (ENABLE_ASSERTIONS) {
+    if (ENABLE_ASSERTIONS && ctx->t_id == 0)  time_approx++;
+    p_ops->debug_loop->loop_counter++;
+    if (p_ops->debug_loop->loop_counter == M_16) {
+      //if (t_id == 0) print_all_stalled_sessions(p_ops, t_id);
+
+      //printf("Wrkr %u is working rectified keys %lu \n",
+      //       t_id, t_stats[t_id].rectified_keys);
+
+//        if (t_id == 0) {
+//          printf("Wrkr %u sleeping machine bit %u, q-reads %lu, "
+//                   "epoch_id %u, reqs %lld failed writes %lu, writes done %lu/%lu \n", t_id,
+//                 conf_bit_vec[MACHINE_THAT_SLEEPS].bit,
+//                 t_stats[t_id].quorum_reads, (uint16_t) epoch_id,
+//                 t_stats[t_id].cache_hits_per_thread, t_stats[t_id].failed_rem_writes,
+//                 t_stats[t_id].writes_sent, t_stats[t_id].writes_asked_by_clients);
+//        }
+      p_ops->debug_loop->loop_counter = 0;
+    }
+  }
+}
+
+
+static void main_loop(context_t *ctx)
+{
+  p_ops_t *p_ops = (p_ops_t *) ctx->appl_ctx;
+  while(true) {
+
+    kite_checks_at_loop_start(ctx);
+    /* ---------------------------------------------------------------------------
+		------------------------------ POLL FOR WRITES--------------------------
+		---------------------------------------------------------------------------*/
+    poll_for_writes(ctx, W_QP_ID);
+
+    /* ---------------------------------------------------------------------------
+       ------------------------------ SEND ACKS----------------------------------
+       ---------------------------------------------------------------------------*/
+
+    send_acks(ctx);
+
+    /* ---------------------------------------------------------------------------
+		------------------------------ POLL FOR READS--------------------------
+		---------------------------------------------------------------------------*/
+    poll_for_reads(ctx);
+
+    /* ---------------------------------------------------------------------------
+		------------------------------ SEND READ REPLIES--------------------------
+		---------------------------------------------------------------------------*/
+
+    send_r_reps(ctx);
+
+    /* ---------------------------------------------------------------------------
+		------------------------------ POLL FOR READ REPLIES--------------------------
+		---------------------------------------------------------------------------*/
+
+    poll_for_read_replies(ctx);
+
+    /* ---------------------------------------------------------------------------
+		------------------------------ COMMIT READS----------------------------------
+		---------------------------------------------------------------------------*/
+    // Either commit a read or convert it into a write
+    commit_reads(p_ops, ctx->t_id);
+
+    /* ---------------------------------------------------------------------------
+		------------------------------ INSPECT RMWS----------------------------------
+		---------------------------------------------------------------------------*/
+    inspect_rmws(p_ops, ctx->t_id);
+
+    /* ---------------------------------------------------------------------------
+    ------------------------------ POLL FOR ACKS--------------------------------
+    ---------------------------------------------------------------------------*/
+    poll_acks(ctx);
+
+    remove_writes(p_ops, ctx->t_id);
+
+    /* ---------------------------------------------------------------------------
+    ------------------------------PROBE THE CACHE--------------------------------------
+    ---------------------------------------------------------------------------*/
+
+    // Get a new batch from the trace, pass it through the kvs and create
+    // the appropriate write/r_rep messages
+    batch_requests_to_KVS(ctx);
+    /* ---------------------------------------------------------------------------
+		------------------------------BROADCAST READS--------------------------
+		---------------------------------------------------------------------------*/
+    // Perform the r_rep broadcasts
+    broadcast_reads(ctx);
+
+
+    /* ---------------------------------------------------------------------------
+     ------------------------------BROADCAST WRITES--------------------------
+     ---------------------------------------------------------------------------*/
+    // Perform the write broadcasts
+    broadcast_writes(ctx);
+  }
+}
 
 #endif /* KITE_INLINE_UTIL_H */
