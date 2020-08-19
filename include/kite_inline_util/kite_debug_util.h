@@ -656,7 +656,8 @@ static inline void checks_and_prints_when_forging_r_rep_wr(uint8_t coalesce_num,
     for (uint16_t i = 0; i < coalesce_num; i++)
       my_printf(yellow, "Wrkr: %u, Read Reply no %d, opcode :%u message mes_size %d \n",
                 t_id, i, r_rep_mes->opcode, send_sgl[mes_i].length);
-    my_printf(green, "Wrkr %d : I send a READ REPLY message of %u r reps with mes_size %u, with lid: %u to machine %u \n",
+    my_printf(green, "Wrkr %d : I send a READ REPLY message of %u "
+                "r reps with mes_size %u, with lid: %u to machine %u \n",
               t_id, coalesce_num, send_sgl[mes_i].length,
               r_rep_mes->l_id, r_rep_fifo->rem_m_id[r_rep_i]);
   }
@@ -1470,7 +1471,7 @@ static inline void check_on_overwriting_commit_algorithm(mica_op_t *kv_ptr,
     if (cart_comp == EQUAL) {
       assert(kv_ptr->last_committed_log_no == com_info->log_no);
       assert(kv_ptr->last_committed_rmw_id.id == com_info->rmw_id.id);
-      assert(memcmp(kv_ptr->value, com_info->value, (size_t) 8) == 0);
+      //assert(memcmp(kv_ptr->value, com_info->value, (size_t) 8) == 0);
     }
     else if (cart_comp == SMALLER) {
       assert(compare_ts(&com_info->base_ts, &kv_ptr->ts) == SMALLER ||

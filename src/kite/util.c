@@ -299,8 +299,10 @@ p_ops_t* set_up_pending_ops(context_t *ctx)
 
   // R_REP_FIFO
   p_ops->r_rep_fifo = (struct r_rep_fifo *) calloc(1, sizeof(struct r_rep_fifo));
-  p_ops->r_rep_fifo->r_rep_message =
-    (struct r_rep_message_template *) calloc((size_t)R_REP_FIFO_SIZE, (size_t)ALIGNED_R_REP_SEND_SIDE);
+  fifo_t *r_rep_send_fifo = ctx->qp_meta[R_REP_QP_ID].send_fifo;
+  assert(r_rep_send_fifo->max_byte_size == R_REP_FIFO_SIZE * ALIGNED_R_REP_SEND_SIDE);
+  p_ops->r_rep_fifo->r_rep_message = (struct r_rep_message_template *) r_rep_send_fifo->fifo;
+    //(struct r_rep_message_template *) calloc((size_t)R_REP_FIFO_SIZE, (size_t)ALIGNED_R_REP_SEND_SIDE);
   p_ops->r_rep_fifo->rem_m_id = (uint8_t *) malloc(R_REP_FIFO_SIZE * sizeof(uint8_t));
   p_ops->r_rep_fifo->pull_ptr = 1;
   for (i= 0; i < R_REP_FIFO_SIZE; i++) p_ops->r_rep_fifo->rem_m_id[i] = MACHINE_NUM;
@@ -308,13 +310,17 @@ p_ops_t* set_up_pending_ops(context_t *ctx)
 
   // W_FIFO
   p_ops->w_fifo = (write_fifo_t *) calloc(1, sizeof(write_fifo_t));
-  p_ops->w_fifo->w_message =
-    (struct w_message_template *) calloc((size_t)W_FIFO_SIZE, (size_t) ALIGNED_W_SEND_SIDE);
+  fifo_t *w_send_fifo = ctx->qp_meta[W_QP_ID].send_fifo;
+  assert(w_send_fifo->max_byte_size == W_FIFO_SIZE * ALIGNED_W_SEND_SIDE);
+  p_ops->w_fifo->w_message = (struct w_message_template *) w_send_fifo->fifo;
+    //(struct w_message_template *) calloc((size_t)W_FIFO_SIZE, (size_t) ALIGNED_W_SEND_SIDE);
 
   // R_FIFO
+
   p_ops->r_fifo = (struct read_fifo *) calloc(1, sizeof(struct read_fifo));
-  p_ops->r_fifo->r_message =
-    (struct r_message_template *) calloc(R_FIFO_SIZE, (size_t) ALIGNED_R_SEND_SIDE);
+  fifo_t *r_send_fifo = ctx->qp_meta[R_QP_ID].send_fifo;
+  assert(r_send_fifo->max_byte_size == R_FIFO_SIZE * ALIGNED_R_SEND_SIDE);
+  p_ops->r_fifo->r_message = (struct r_message_template *) r_send_fifo->fifo; //calloc(R_FIFO_SIZE, (size_t) ALIGNED_R_SEND_SIDE);
 
 
   // PREP STRUCT

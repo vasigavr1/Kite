@@ -71,6 +71,7 @@ void *worker(void *arg)
   for (uint16_t i = 0; i < MACHINE_NUM; i++) {
     acks[i].m_id = (uint8_t) machine_id;
     acks[i].opcode = OP_ACK;
+    ctx->qp_meta[ACK_QP_ID].send_wr[i].sg_list->addr = (uintptr_t) &acks[i];
   }
   p_ops_t *p_ops = (p_ops_t *) ctx->appl_ctx;
 

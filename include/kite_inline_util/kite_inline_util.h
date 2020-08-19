@@ -19,6 +19,7 @@
 #include <unistd.h>
 #include <assert.h>
 #include <config.h>
+#include <infiniband/verbs.h>
 
 
 /* ---------------------------------------------------------------------------
@@ -330,11 +331,12 @@ static inline void broadcast_reads(context_t *ctx)
       br_i = 0;
     }
   }
-  if (br_i > 0)
+  if (br_i > 0) {
     post_quorum_broadasts_and_recvs(r_rep_qp_meta->recv_info,
                                     r_rep_qp_meta->recv_wr_num - r_rep_qp_meta->recv_info->posted_recvs,
                                     ctx->q_info, br_i, qp_meta->sent_tx, qp_meta->send_wr,
                                     qp_meta->send_qp, qp_meta->enable_inlining);
+  }
   p_ops->r_fifo->bcast_pull_ptr = bcast_pull_ptr;
   if (mes_sent > 0) decrease_credits(qp_meta->credits, ctx->q_info, mes_sent);
 }
@@ -380,7 +382,7 @@ static inline void send_r_reps(context_t *ctx)
       post_recvs_with_recv_info(ctx->qp_meta[W_QP_ID].recv_info, accept_recvs_to_post);
     }
     qp_meta->send_wr[mes_i - 1].next = NULL;
-    int ret = ibv_post_send(qp_meta->send_qp, &qp_meta->send_wr[0], &bad_send_wr);
+    int ret = ibv_post_send(qp_meta->send_qp, qp_meta->send_wr, &bad_send_wr);
     if (ENABLE_ASSERTIONS) CPE(ret, "R_REP ibv_post_send error", ret);
   }
   r_rep_fifo->pull_ptr = pull_ptr;
@@ -402,8 +404,8 @@ static inline void send_acks(context_t *ctx, ack_mes_t *acks)
     checks_stats_prints_when_sending_acks(acks, m_i, ctx->t_id);
     acks[m_i].opcode = OP_ACK;
 
-    selective_signaling_for_unicast(&qp_meta->sent_tx, ACK_SS_BATCH, qp_meta->send_wr,
-                                    m_i, qp_meta->send_cq, true, "sending acks", ctx->t_id);
+    selective_signaling_for_unicast(&qp_meta->sent_tx, qp_meta->ss_batch, qp_meta->send_wr,
+                                    m_i, qp_meta->send_cq, true, qp_meta->send_string, ctx->t_id);
     if (ack_i > 0) {
       if (DEBUG_ACKS)
         my_printf(yellow, "Wrkr %u, ack %u points to ack %u \n", ctx->t_id, prev_ack_i, m_i);
@@ -422,7 +424,8 @@ static inline void send_acks(context_t *ctx, ack_mes_t *acks)
   }
   // SEND the acks
   if (ack_i > 0) {
-    if (DEBUG_ACKS) printf("send %u acks, last recipient %u, first recipient %u \n", ack_i, prev_ack_i, first_wr);
+    if (DEBUG_ACKS) printf("Wrkr %u send %u acks, last recipient %u, first recipient %u \n",
+                           ctx->t_id, ack_i, prev_ack_i, first_wr);
     qp_meta->send_wr[prev_ack_i].next = NULL;
     int ret = ibv_post_send(qp_meta->send_qp, &qp_meta->send_wr[first_wr], &bad_send_wr);
     if (ENABLE_ASSERTIONS) CPE(ret, "ACK ibv_post_send error", ret);
@@ -524,20 +527,15 @@ static inline void poll_for_reads(context_t *ctx)
   fifo_t *recv_fifo = qp_meta->recv_fifo;
   p_ops_t *p_ops = (p_ops_t *) ctx->appl_ctx;
   if (p_ops->r_rep_fifo->mes_size == R_REP_FIFO_SIZE) return;
+
   int completed_messages =
     find_how_many_messages_can_be_polled(qp_meta->recv_cq, qp_meta->recv_wc,
                                          &qp_meta->completed_but_not_polled,
                                          qp_meta->recv_buf_slot_num, ctx->t_id);
   if (completed_messages <= 0) {
     qp_meta->wait_for_reps_ctr++;
-    if (qp_meta->wait_for_reps_ctr == M_4) {
-      my_printf(red, "havent polled reads \n");
-      qp_meta->wait_for_reps_ctr = 0;
-    }
     return;
   }
-  assert(false);
-
   qp_meta->polled_messages = 0;
   uint32_t polled_reads = 0;
   // Start polling

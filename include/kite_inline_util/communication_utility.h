@@ -66,7 +66,8 @@ static inline void forge_r_rep_wr(uint32_t r_rep_pull_ptr, uint16_t mes_i, conte
   send_wr[mes_i].wr.ud.ah = rem_qp[rm_id][ctx->t_id][R_REP_QP_ID].ah;
   send_wr[mes_i].wr.ud.remote_qpn = (uint32) rem_qp[rm_id][ctx->t_id][R_REP_QP_ID].qpn;
   selective_signaling_for_unicast(&qp_meta->sent_tx, qp_meta->ss_batch, send_wr,
-                                  mes_i, qp_meta->send_cq, qp_meta->enable_inlining,
+                                  mes_i, qp_meta->send_cq,
+                                  qp_meta->enable_inlining,
                                   qp_meta->send_string, ctx->t_id);
   if (mes_i > 0) send_wr[mes_i - 1].next = &send_wr[mes_i];
 }
