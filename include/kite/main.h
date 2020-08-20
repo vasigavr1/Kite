@@ -10,9 +10,6 @@
 #include "buffer_sizes.h"
 #include "stats.h"
 
-// Threads
-void *worker(void *arg);
-
 
 // RMWs
 #define LOCAL_PROP_NUM_ (SESSIONS_PER_THREAD)

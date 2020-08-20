@@ -3,7 +3,16 @@
 #include "util.h"
 #include "generic_inline_util.h"
 
+struct bit_vector send_bit_vector;
+struct multiple_owner_bit conf_bit_vec[MACHINE_NUM];
 
+atomic_uint_fast64_t epoch_id;
+atomic_bool print_for_debug;
+const uint16_t machine_bit_id[SEND_CONF_VEC_SIZE * 8] = {1, 2, 4, 8, 16, 32, 64, 128, 256, 512,
+                                                         1024, 2048, 4096, 8192, 16384, 32768};
+atomic_uint_fast64_t committed_glob_sess_rmw_id[GLOBAL_SESSION_NUM];
+FILE* rmw_verify_fp[WORKERS_PER_MACHINE];
+FILE* client_log[CLIENTS_PER_MACHINE];
 
 
 void kite_static_assert_compile_parameters()
@@ -103,7 +112,7 @@ void kite_static_assert_compile_parameters()
                 "All-aboard does not work with the RC semantics");
 }
 
-void print_parameters_in_the_start()
+void kite_print_parameters_in_the_start()
 {
 
 

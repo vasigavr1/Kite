@@ -43,8 +43,6 @@ set(COMMON_FILES
 
 set(KITE_SOURCE_FILES
         src/kite/util.c
-        src/kite/main.c
-        src/kite/worker.c
         src/kite/stats.c
         include/kite_inline_util/kite_inline_util.h
         include/kite/main.h
