@@ -18,6 +18,7 @@
 #include "top.h"
 #include "opcodes.h"
 
+void kite_stats(stats_ctx_t *ctx);
 
 
 // CORE CONFIGURATION
