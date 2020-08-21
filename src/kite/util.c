@@ -236,71 +236,13 @@ void randomize_op_values(trace_op_t *ops, uint16_t t_id)
 /* ---------------------------------------------------------------------------
 ------------------------------KITE WORKER --------------------------------------
 ---------------------------------------------------------------------------*/
-// set the different queue depths for the queue pairs
-void set_up_queue_depths(int** recv_q_depths, int** send_q_depths)
-{
-  /* -------LEADER-------------
-  * 1st Dgram send Reads -- receive Reads
-  * 2nd Dgram send Read Replies  -- receive Read Replies
-  * 3rd Dgram send Writes  -- receive Writes
-  * 4th Dgram send Acks -- receive Acks
-  * */
-
-  *send_q_depths = malloc(QP_NUM * sizeof(int));
-  *recv_q_depths = malloc(QP_NUM * sizeof(int));
-  //RECV
-  (*recv_q_depths)[R_QP_ID] = ENABLE_MULTICAST ? 1 : RECV_R_Q_DEPTH;
-  (*recv_q_depths)[R_REP_QP_ID] = RECV_R_REP_Q_DEPTH;
-  (*recv_q_depths)[W_QP_ID] = ENABLE_MULTICAST ? 1 : RECV_W_Q_DEPTH;
-  (*recv_q_depths)[ACK_QP_ID] = RECV_ACK_Q_DEPTH;
-  //SEND
-  (*send_q_depths)[R_QP_ID] = SEND_R_Q_DEPTH;
-  (*send_q_depths)[R_REP_QP_ID] = SEND_R_REP_Q_DEPTH;
-  (*send_q_depths)[W_QP_ID] = SEND_W_Q_DEPTH;
-  (*send_q_depths)[ACK_QP_ID] = SEND_ACK_Q_DEPTH;
-
-}
-
-
-
-// Initialize the quorum info that contains the system configuration
-quorum_info_t* set_up_q_info(struct ibv_send_wr *w_send_wr,
-                             struct ibv_send_wr *r_send_wr,
-                             uint16_t credits[][MACHINE_NUM])
-{
-  quorum_info_t * q_info = (quorum_info_t *) calloc(1, sizeof(quorum_info_t));
-  q_info->active_num = REM_MACH_NUM;
-  q_info->first_active_rm_id = 0;
-  q_info->last_active_rm_id = REM_MACH_NUM - 1;
-  for (uint8_t i = 0; i < REM_MACH_NUM; i++) {
-    uint8_t m_id = i < machine_id ? i : (uint8_t) (i + 1);
-    q_info->active_ids[i] = m_id;
-    q_info->send_vector[i] = true;
-  }
-
-  q_info->num_of_send_wrs = Q_INFO_NUM_SEND_WRS;
-  q_info->send_wrs_ptrs = (struct ibv_send_wr **) malloc(Q_INFO_NUM_SEND_WRS * sizeof(struct ibv_send_wr *));
-  q_info->send_wrs_ptrs[0] = w_send_wr;
-  q_info->send_wrs_ptrs[1] = r_send_wr;
-
-  q_info->num_of_credit_targets = Q_INFO_CREDIT_TARGETS;
-  q_info->targets = malloc (q_info->num_of_credit_targets * sizeof(uint16_t));
-  q_info->targets[0] = W_CREDITS;
-  q_info->targets[1] = R_CREDITS;
-  q_info->credit_ptrs = malloc(q_info->num_of_credit_targets * sizeof(uint16_t*));
-  q_info->credit_ptrs[0] = credits[W_VC];
-  q_info->credit_ptrs[1] = credits[R_VC];
-
-
-  return q_info;
-
-}
 
 void kite_init_qp_meta(context_t *ctx)
 {
   per_qp_meta_t *qp_meta = ctx->qp_meta;
   create_per_qp_meta(&qp_meta[R_QP_ID], MAX_R_WRS,
                      MAX_RECV_R_WRS, SEND_BCAST_RECV_BCAST,  RECV_REQ,
+                     R_REP_QP_ID,
                      REM_MACH_NUM, REM_MACH_NUM, R_BUF_SLOTS,
                      R_RECV_SIZE, R_SEND_SIZE, ENABLE_MULTICAST, ENABLE_MULTICAST,
                      R_SEND_MCAST_QP, 0, R_FIFO_SIZE,
@@ -310,6 +252,7 @@ void kite_init_qp_meta(context_t *ctx)
   ///
   create_per_qp_meta(&qp_meta[W_QP_ID], MAX_W_WRS,
                      MAX_RECV_W_WRS, SEND_BCAST_RECV_BCAST,  RECV_REQ,
+                     ACK_QP_ID,
                      REM_MACH_NUM, REM_MACH_NUM, W_BUF_SLOTS,
                      W_RECV_SIZE, W_SEND_SIZE, ENABLE_MULTICAST, ENABLE_MULTICAST,
                      W_SEND_MCAST_QP, 0, W_FIFO_SIZE,
@@ -318,6 +261,7 @@ void kite_init_qp_meta(context_t *ctx)
   ///
   create_per_qp_meta(&qp_meta[R_REP_QP_ID], MAX_R_REP_WRS,
                      MAX_RECV_R_REP_WRS, SEND_UNI_REP_RECV_UNI_REP, RECV_REPLY,
+                     R_QP_ID,
                      REM_MACH_NUM, REM_MACH_NUM, R_REP_BUF_SLOTS,
                      R_REP_RECV_SIZE, R_REP_SEND_SIZE, false, false,
                      0, 0, R_REP_FIFO_SIZE,
@@ -328,7 +272,7 @@ void kite_init_qp_meta(context_t *ctx)
   ///
   create_per_qp_meta(&qp_meta[ACK_QP_ID], MAX_ACK_WRS, MAX_RECV_ACK_WRS,
                      SEND_UNI_REP_RECV_UNI_REP,
-                     RECV_REPLY,
+                     RECV_REPLY, W_QP_ID,
                      REM_MACH_NUM, REM_MACH_NUM, ACK_BUF_SLOTS,
                      ACK_RECV_SIZE, ACK_SIZE, false, false,
                      0, 0, 0, 0, 0,
@@ -473,103 +417,6 @@ p_ops_t* set_up_pending_ops(context_t *ctx)
 }
 
 
-
-// Set up the memory registrations required
-void set_up_mr(struct ibv_mr **mr, void *buf, uint8_t enable_inlining, uint32_t buffer_size,
-                    hrd_ctrl_blk_t *cb)
-{
-  if (!enable_inlining)
-    *mr = register_buffer(cb->pd, buf, buffer_size);
-}
-
-
-
-// Set up all Broadcast WRs
-void set_up_bcast_WRs(struct ibv_send_wr *w_send_wr, struct ibv_sge *w_send_sgl,
-                      struct ibv_send_wr *r_send_wr, struct ibv_sge *r_send_sgl,
-                      uint16_t remote_thread,  hrd_ctrl_blk_t *cb,
-                      struct ibv_mr *w_mr, struct ibv_mr *r_mr, mcast_cb_t* mcast_cb)
-{
-  uint16_t i, j;
-  for (j = 0; j < MAX_BCAST_BATCH; j++) { // Number of Broadcasts
-    if (!W_ENABLE_INLINING) w_send_sgl[j].lkey = w_mr->lkey;
-    if (!R_ENABLE_INLINING) r_send_sgl[j].lkey = r_mr->lkey;
-    // BROADCASTS
-    for (i = 0; i < MESSAGES_IN_BCAST; i++) {
-      uint16_t rm_id;
-      if (i < machine_id) rm_id = (uint16_t) i;
-      else rm_id = (uint16_t) ((i + 1) % MACHINE_NUM);
-      uint16_t index = (uint16_t) ((j * MESSAGES_IN_BCAST) + i);
-      assert (index < MESSAGES_IN_BCAST_BATCH);
-      bool last = (i == MESSAGES_IN_BCAST - 1);
-      set_up_wr(&w_send_wr[index], &w_send_sgl[j], W_ENABLE_INLINING,
-                last, rm_id, remote_thread, W_QP_ID,
-                ENABLE_MULTICAST, mcast_cb, W_SEND_MCAST_QP);
-      set_up_wr(&r_send_wr[index], &r_send_sgl[j], R_ENABLE_INLINING,
-                last, rm_id, remote_thread, R_QP_ID,
-                ENABLE_MULTICAST, mcast_cb, R_SEND_MCAST_QP);
-    }
-  }
-}
-
-// Set up the r_rep replies and acks send and recv wrs
-void set_up_ack_n_r_rep_WRs(struct ibv_send_wr *ack_send_wr, struct ibv_sge *ack_send_sgl,
-                            struct ibv_send_wr *r_rep_send_wr, struct ibv_sge *r_rep_send_sgl,
-                            hrd_ctrl_blk_t *cb, struct ibv_mr *r_rep_mr,
-                            ack_mes_t *acks, uint16_t remote_thread) {
-  uint16_t i;
-  // ACKS
-  for (i = 0; i < MAX_ACK_WRS; ++i) {
-    ack_send_wr[i].wr.ud.ah = rem_qp[i][remote_thread][ACK_QP_ID].ah;
-    ack_send_wr[i].wr.ud.remote_qpn = (uint32) rem_qp[i][remote_thread][ACK_QP_ID].qpn;
-    ack_send_sgl[i].addr = (uint64_t) (uintptr_t) &acks[i];
-    ack_send_sgl[i].length = ACK_SIZE;
-    ack_send_wr[i].wr.ud.remote_qkey = HRD_DEFAULT_QKEY;
-    ack_send_wr[i].opcode = IBV_WR_SEND;
-    ack_send_wr[i].send_flags = IBV_SEND_INLINE;
-    ack_send_wr[i].num_sge = 1;
-    ack_send_wr[i].sg_list = &ack_send_sgl[i];
-    ack_send_wr[i].next = NULL;
-  }
-  // READ REPLIES
-  for (i = 0; i < MAX_R_REP_WRS; ++i) {
-    if (R_REP_ENABLE_INLINING) r_rep_send_wr[i].send_flags = IBV_SEND_INLINE;
-    else {
-      r_rep_send_sgl[i].lkey = r_rep_mr->lkey;
-      r_rep_send_wr[i].send_flags = 0;
-    }
-    r_rep_send_wr[i].wr.ud.remote_qkey = HRD_DEFAULT_QKEY;
-    r_rep_send_wr[i].opcode = IBV_WR_SEND;
-    r_rep_send_wr[i].num_sge = 1;
-    r_rep_send_wr[i].sg_list = &r_rep_send_sgl[i];
-  }
-}
-
-
-
-// Prepost Receives on the Leader Side
-// Post receives for the coherence traffic in the init phase
-void pre_post_recvs(uint32_t* push_ptr, struct ibv_qp *recv_qp, uint32_t lkey, void* buf,
-                    uint32_t max_reqs, uint32_t number_of_recvs, uint16_t QP_ID, uint32_t message_size)
-{
-  uint32_t i;//, j;
-  for(i = 0; i < number_of_recvs; i++) {
-        hrd_post_dgram_recv(recv_qp,	(buf + ((*push_ptr) * message_size)),
-                            message_size, lkey);
-      MOD_INCR(*push_ptr, max_reqs);
-  }
-}
-
-// Set up the credits
-void set_up_credits(uint16_t credits[][MACHINE_NUM])
-{
-  int i = 0;
-  for (i = 0; i < MACHINE_NUM; i++) {
-    credits[R_VC][i] = R_CREDITS;
-    credits[W_VC][i] = W_CREDITS;
-  }
-
-}
 
 
 
