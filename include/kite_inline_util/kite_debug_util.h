@@ -762,7 +762,7 @@ static inline bool check_entry_validity_with_key(struct key *incoming_key, mica_
 
 // When polling an ack message
 static inline void check_ack_message_count_stats(p_ops_t* p_ops, ack_mes_t* ack,
-                                                 uint32_t index, uint16_t ack_num, uint16_t t_id)
+                                                 uint32_t index, uint32_t ack_num, uint16_t t_id)
 {
   if (ENABLE_ASSERTIONS) {
     assert(ack_num > 0);

@@ -257,7 +257,7 @@ typedef struct pending_ops {
 	write_fifo_t *w_fifo;
   struct read_fifo *r_fifo;
   struct r_rep_fifo *r_rep_fifo;
-  ack_mes_t *ack_send_buf;
+  //ack_mes_t *ack_send_buf;
   //write_t **ptrs_to_w_ops; // used for remote writes
   void **ptrs_to_mes_ops; // used for remote reads
 

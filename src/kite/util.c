@@ -268,15 +268,9 @@ void kite_init_qp_meta(context_t *ctx)
                      0, R_REP_MES_HEADER,
                      "send r_reps", "recv r_reps");
   ///
-
-  ///
-  create_per_qp_meta(&qp_meta[ACK_QP_ID], MAX_ACK_WRS, MAX_RECV_ACK_WRS,
-                     SEND_UNI_REP_RECV_UNI_REP,
-                     RECV_REPLY, W_QP_ID,
-                     REM_MACH_NUM, REM_MACH_NUM, ACK_BUF_SLOTS,
-                     ACK_RECV_SIZE, ACK_SIZE, false, false,
-                     0, 0, 0, 0, 0,
-                     "send acks", "recv acks");
+  crate_ack_qp_meta(&qp_meta[ACK_QP_ID],
+                    W_QP_ID, REM_MACH_NUM,
+                    REM_MACH_NUM, W_CREDITS);
 }
 
 kite_debug_t *init_debug_loop_struct()
@@ -334,12 +328,12 @@ p_ops_t* set_up_pending_ops(context_t *ctx)
   assert(r_send_fifo->max_byte_size == R_FIFO_SIZE * ALIGNED_R_SEND_SIDE);
   p_ops->r_fifo->r_message = (struct r_message_template *) r_send_fifo->fifo; //calloc(R_FIFO_SIZE, (size_t) ALIGNED_R_SEND_SIDE);
 
-  p_ops->ack_send_buf = (ack_mes_t *) calloc(MACHINE_NUM, sizeof(ack_mes_t));
+  ack_mes_t *ack_send_buf = (ack_mes_t *) ctx->qp_meta[ACK_QP_ID].send_fifo->fifo; //calloc(MACHINE_NUM, sizeof(ack_mes_t));
+  assert(ctx->qp_meta[ACK_QP_ID].send_fifo->max_byte_size == ACK_SIZE * MACHINE_NUM);
+  memset(ack_send_buf, 0, ctx->qp_meta[ACK_QP_ID].send_fifo->max_byte_size);
   for (i = 0; i < MACHINE_NUM; i++) {
-    p_ops->ack_send_buf[i].m_id = (uint8_t) machine_id;
-    p_ops->ack_send_buf[i].opcode = OP_ACK;
-    ctx->qp_meta[ACK_QP_ID].send_wr[i].sg_list->addr =
-      (uintptr_t) &p_ops->ack_send_buf[i];
+    ack_send_buf[i].m_id = (uint8_t) machine_id;
+    ack_send_buf[i].opcode = OP_ACK;
   }
 
 

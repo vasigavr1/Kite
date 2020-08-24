@@ -11,10 +11,8 @@
 
 
 // IMPORTANT SIZES
-#define EPOCH_BYTES 2
 #define TS_TUPLE_SIZE (5) // version and m_id consist the Timestamp tuple
 #define LOG_NO_SIZE 4
-//#define RMW_ID_SIZE 8
 #define RMW_VALUE_SIZE VALUE_SIZE //
 #define SESSION_BYTES 2 // session ids must fit in 2 bytes i.e.
 // in the first round of a release the first bytes of the value get overwritten
@@ -138,25 +136,24 @@
 // Acks
 #define MAX_RECV_ACK_WRS (REM_MACH_NUM * W_CREDITS)
 #define MAX_ACK_WRS (MACHINE_NUM)
-#define ACK_SIZE (14)
-#define ACK_RECV_SIZE (GRH_SIZE + (ACK_SIZE))
 
 
 
-// The format of an ack message
-typedef struct ack_message {
-  uint64_t l_id ; // the first local id that is being acked
-  uint8_t m_id;
-  uint8_t opcode;
-  uint16_t credits;
-  uint16_t ack_num;
-} __attribute__((__packed__)) ack_mes_t;
 
-
-typedef struct ack_message_ud_req {
-  uint8_t grh[GRH_SIZE];
-  ack_mes_t ack;
-} ack_mes_ud_t;
+//// The format of an ack message
+//typedef struct ack_message {
+//  uint64_t l_id; // the first local id that is being acked
+//  uint32_t ack_num;
+//  uint16_t credits;
+//  uint8_t m_id;
+//  uint8_t opcode;
+//} __attribute__((__packed__)) ack_mes_t;
+//
+//
+//typedef struct ack_message_ud_req {
+//  uint8_t grh[GRH_SIZE];
+//  ack_mes_t ack;
+//} ack_mes_ud_t;
 
 
 typedef struct write {

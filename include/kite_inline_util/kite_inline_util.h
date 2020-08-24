@@ -394,7 +394,7 @@ static inline void send_acks(context_t *ctx)
 {
   per_qp_meta_t *qp_meta = &ctx->qp_meta[ACK_QP_ID];
   p_ops_t *p_ops = (p_ops_t *) ctx->appl_ctx;
-  ack_mes_t *acks = p_ops->ack_send_buf;
+  ack_mes_t *acks = (ack_mes_t *) qp_meta->send_fifo->fifo;
   uint8_t ack_i = 0, prev_ack_i = 0, first_wr = 0;
   struct ibv_send_wr *bad_send_wr;
   uint32_t recvs_to_post_num = 0;
@@ -446,7 +446,7 @@ static inline void poll_for_writes(context_t *ctx,
   per_qp_meta_t *qp_meta = &ctx->qp_meta[qp_id];
   fifo_t *recv_fifo = qp_meta->recv_fifo;
   p_ops_t *p_ops = (p_ops_t *) ctx->appl_ctx;
-  ack_mes_t *acks = p_ops->ack_send_buf;
+  ack_mes_t *acks = (ack_mes_t *) ctx->qp_meta[ACK_QP_ID].send_fifo->fifo;
   uint32_t writes_for_kvs = 0;
   int completed_messages =
     find_how_many_messages_can_be_polled(qp_meta->recv_cq, qp_meta->recv_wc,
@@ -496,7 +496,7 @@ static inline void poll_for_writes(context_t *ctx,
     // Make sure the writes of the message can be processed
     if (!is_only_accepts) {
       if (ENABLE_ASSERTIONS) assert(writes_to_be_acked > 0);
-      if (!ack_bookkeeping(&acks[w_mes->m_id], writes_to_be_acked, w_mes->l_id, w_mes->m_id, ctx->t_id)) {
+      if (!ctx_ack_insert(ctx, ACK_QP_ID, writes_to_be_acked, w_mes->l_id, w_mes->m_id)) {
 
         //if (DEBUG_QUORUM)
          // my_printf(yellow, "Wrkr %u leaves %u messages for the next polling round \n",
@@ -591,7 +591,7 @@ static inline void poll_for_reads(context_t *ctx)
 
 
 // Apply the acks that refer to stored writes
-static inline void apply_acks(uint16_t ack_num, uint32_t ack_ptr,
+static inline void apply_acks(uint32_t ack_num, uint32_t ack_ptr,
                               uint8_t ack_m_id,
                               uint64_t l_id, uint64_t pull_lid,
                               context_t *ctx)
@@ -692,7 +692,7 @@ static inline void poll_acks(context_t *ctx)
   while (qp_meta->polled_messages < completed_messages) {
     volatile ack_mes_ud_t *incoming_acks = (volatile ack_mes_ud_t *) qp_meta->recv_fifo->fifo;
     ack_mes_t *ack = (ack_mes_t *) &incoming_acks[recv_fifo->pull_ptr].ack;
-        uint16_t ack_num = ack->ack_num;
+    uint32_t ack_num = ack->ack_num;
     check_ack_message_count_stats(p_ops, ack, recv_fifo->pull_ptr, ack_num, ctx->t_id);
 
     fifo_incr_pull_ptr(recv_fifo);
@@ -701,13 +701,9 @@ static inline void poll_acks(context_t *ctx)
     uint64_t l_id = ack->l_id;
     uint64_t pull_lid = p_ops->local_w_id; // l_id at the pull pointer
     uint32_t ack_ptr; // a pointer in the FIFO, from where ack should be added
-    ctx->qp_meta[W_QP_ID].credits[ack->m_id] += ack->credits;
-    //my_printf(green, "Receving %u write credits, total %u,  from %u \n ",
-    //          ack->credits, credits[W_VC][ack->m_id], ack->m_id);
-    //if (t_id == 1) printf("Credits %u, %u, \n", credits[W_VC][ack->m_id], ack->credits);
-    if (ctx->qp_meta[W_QP_ID].credits[ack->m_id] > W_CREDITS)
-      ctx->qp_meta[W_QP_ID].credits[ack->m_id] = W_CREDITS;
-    assert(ctx->qp_meta[W_QP_ID].credits[ack->m_id] <= W_CREDITS);
+    //my_printf(green, "Receiving %u write credits, total %u,  from %u \n ",
+    //          ack->credits, ctx->qp_meta[W_QP_ID].credits[ack->m_id], ack->m_id);
+    ctx_increase_credits_on_polling_ack(ctx, ACK_QP_ID, ack);
     // if the pending write FIFO is empty it means the acks are for committed messages.
     if (p_ops->w_size == 0 ) {
       ack->opcode = INVALID_OPCODE;
@@ -1039,7 +1035,8 @@ static void main_loop(context_t *ctx)
        ------------------------------ SEND ACKS----------------------------------
        ---------------------------------------------------------------------------*/
 
-    send_acks(ctx);
+    ctx_send_acks(ctx, ACK_QP_ID);
+    //send_acks(ctx);
 
     /* ---------------------------------------------------------------------------
 		------------------------------ POLL FOR READS--------------------------

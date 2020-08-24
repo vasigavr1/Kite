@@ -196,7 +196,7 @@ static inline bool ack_bookkeeping(ack_mes_t *ack, uint8_t w_num, uint64_t l_id,
       my_printf(red, "Wrkr %u: Adding to existing ack for machine %u  with l_id %lu, "
                   "ack_num %u with new l_id %lu, coalesce_num %u, opcode %u\n", t_id, m_id,
                 ack->l_id, ack->ack_num, l_id, w_num, ack->opcode);
-      //assert(false);
+      assert(false);
       return false;
     }
   }
