@@ -932,9 +932,9 @@ static inline void remove_writes(p_ops_t *p_ops,
     if (ENABLE_ASSERTIONS && EMULATE_ABD)
       assert(w_state == READY_RELEASE || w_state == READY_ACQUIRE);
     //if (DEBUG_ACKS)
-    //  my_printf(green, "Wkrk %u freeing write at w_pull_ptr %u, w_size %u, w_state %d, session %u, committed_w_id %lu, acks seen %u \n",
+    //  my_printf(green, "Wkrk %u freeing write at w_pull_ptr %u, w_size %u, w_state %d, session %u, local_w_id %lu, acks seen %u \n",
     //               g_id, p_ops->w_pull_ptr, p_ops->w_size, p_ops->w_state[p_ops->w_pull_ptr],
-    //               p_ops->w_session_id[p_ops->w_pull_ptr], p_ops->committed_w_id, p_ops->acks_seen[p_ops->w_pull_ptr]);
+    //               p_ops->w_session_id[p_ops->w_pull_ptr], p_ops->local_w_id, p_ops->acks_seen[p_ops->w_pull_ptr]);
     //if (t_id == 1) printf("Wrkr %u Clearing state %u ptr %u \n", t_id, w_state, p_ops->w_pull_ptr);
     uint32_t sess_id = w_meta->sess_id;
     if (ENABLE_ASSERTIONS) assert(sess_id < SESSIONS_PER_THREAD);

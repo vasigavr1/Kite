@@ -174,7 +174,7 @@ static inline void raise_conf_bit_iff_owned(const uint64_t local_r_id,  const ui
     if (bit_gets_flipped) {
       if (t_id == 0 && conf_bit_vec[acq_m_id].bit == UP_STABLE);
       my_printf(green, "Wrkr %u Acquire  from machine %u had ownership of its failure bit %u/%d, "
-                  "owned t_id %u, owned committed_w_id %u\n",
+                  "owned t_id %u, owned local_w_id %u\n",
                 t_id, acq_m_id, conf_bit_vec[acq_m_id].bit, UP_STABLE,
                 t_id, local_r_id);
     }
