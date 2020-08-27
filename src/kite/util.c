@@ -75,7 +75,7 @@ void kite_static_assert_compile_parameters()
   static_assert(sizeof(struct commit) == COMMIT_SIZE, "");
   // UD- REQS
   static_assert(sizeof(r_rep_mes_ud_t) == R_REP_RECV_SIZE, "");
-  static_assert(sizeof(ack_mes_ud_t) == ACK_RECV_SIZE, "");
+  static_assert(sizeof(ctx_ack_mes_ud_t) == CTX_ACK_RECV_SIZE, "");
   static_assert(sizeof(w_mes_ud_t) == W_RECV_SIZE, "");
   static_assert(sizeof(r_mes_ud_t) == R_RECV_SIZE, "");
 
@@ -136,8 +136,8 @@ void kite_print_parameters_in_the_start()
 
 
   my_printf(cyan, "ACK: ack message %lu/%d, ack message ud req %llu/%d\n",
-              sizeof(ack_mes_t), ACK_SIZE,
-              sizeof(ack_mes_ud_t), ACK_RECV_SIZE);
+              sizeof(ctx_ack_mes_t), CTX_ACK_SIZE,
+              sizeof(ctx_ack_mes_ud_t), CTX_ACK_RECV_SIZE);
   my_printf(yellow, "READ: read %lu/%d, read message %lu/%d, read message ud req %lu/%d\n",
                 sizeof(struct read), R_SIZE,
                 sizeof(struct r_message), R_SEND_SIZE,
@@ -328,8 +328,8 @@ p_ops_t* set_up_pending_ops(context_t *ctx)
   assert(r_send_fifo->max_byte_size == R_FIFO_SIZE * ALIGNED_R_SEND_SIDE);
   p_ops->r_fifo->r_message = (struct r_message_template *) r_send_fifo->fifo; //calloc(R_FIFO_SIZE, (size_t) ALIGNED_R_SEND_SIDE);
 
-  ack_mes_t *ack_send_buf = (ack_mes_t *) ctx->qp_meta[ACK_QP_ID].send_fifo->fifo; //calloc(MACHINE_NUM, sizeof(ack_mes_t));
-  assert(ctx->qp_meta[ACK_QP_ID].send_fifo->max_byte_size == ACK_SIZE * MACHINE_NUM);
+  ctx_ack_mes_t *ack_send_buf = (ctx_ack_mes_t *) ctx->qp_meta[ACK_QP_ID].send_fifo->fifo; //calloc(MACHINE_NUM, sizeof(ctx_ack_mes_t));
+  assert(ctx->qp_meta[ACK_QP_ID].send_fifo->max_byte_size == CTX_ACK_SIZE * MACHINE_NUM);
   memset(ack_send_buf, 0, ctx->qp_meta[ACK_QP_ID].send_fifo->max_byte_size);
   for (i = 0; i < MACHINE_NUM; i++) {
     ack_send_buf[i].m_id = (uint8_t) machine_id;

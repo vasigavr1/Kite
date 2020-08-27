@@ -14,7 +14,7 @@
 
 
 static inline int find_how_many_write_messages_can_be_polled(struct ibv_cq *w_recv_cq, struct ibv_wc *w_recv_wc,
-                                                             recv_info_t *w_recv_info, ack_mes_t *acks,
+                                                             recv_info_t *w_recv_info, ctx_ack_mes_t *acks,
                                                              uint32_t *completed_but_not_polled_writes,
                                                              uint16_t t_id)
 {
@@ -188,7 +188,7 @@ static inline void post_receives_for_r_reps_for_accepts(recv_info_t *r_rep_recv_
 }
 
 // Keep track of the write messages to send the appropriate acks
-static inline bool ack_bookkeeping(ack_mes_t *ack, uint8_t w_num, uint64_t l_id,
+static inline bool ack_bookkeeping(ctx_ack_mes_t *ack, uint8_t w_num, uint64_t l_id,
                                    const uint8_t m_id, const uint16_t t_id)
 {
   if (ENABLE_ASSERTIONS && ack->opcode != OP_ACK) {

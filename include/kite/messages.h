@@ -141,7 +141,7 @@
 
 
 //// The format of an ack message
-//typedef struct ack_message {
+//typedef struct ctx_ack_message {
 //  uint64_t l_id; // the first local id that is being acked
 //  uint32_t ack_num;
 //  uint16_t credits;
@@ -150,10 +150,10 @@
 //} __attribute__((__packed__)) ack_mes_t;
 //
 //
-//typedef struct ack_message_ud_req {
+//typedef struct ctx_ack_message_ud_req {
 //  uint8_t grh[GRH_SIZE];
 //  ack_mes_t ack;
-//} ack_mes_ud_t;
+//} ctx_ack_mes_ud_t;
 
 
 typedef struct write {

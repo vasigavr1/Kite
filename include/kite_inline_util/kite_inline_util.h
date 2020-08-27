@@ -394,7 +394,7 @@ static inline void send_acks(context_t *ctx)
 {
   per_qp_meta_t *qp_meta = &ctx->qp_meta[ACK_QP_ID];
   p_ops_t *p_ops = (p_ops_t *) ctx->appl_ctx;
-  ack_mes_t *acks = (ack_mes_t *) qp_meta->send_fifo->fifo;
+  ctx_ack_mes_t *acks = (ctx_ack_mes_t *) qp_meta->send_fifo->fifo;
   uint8_t ack_i = 0, prev_ack_i = 0, first_wr = 0;
   struct ibv_send_wr *bad_send_wr;
   uint32_t recvs_to_post_num = 0;
@@ -446,7 +446,7 @@ static inline void poll_for_writes(context_t *ctx,
   per_qp_meta_t *qp_meta = &ctx->qp_meta[qp_id];
   fifo_t *recv_fifo = qp_meta->recv_fifo;
   p_ops_t *p_ops = (p_ops_t *) ctx->appl_ctx;
-  ack_mes_t *acks = (ack_mes_t *) ctx->qp_meta[ACK_QP_ID].send_fifo->fifo;
+  ctx_ack_mes_t *acks = (ctx_ack_mes_t *) ctx->qp_meta[ACK_QP_ID].send_fifo->fifo;
   uint32_t writes_for_kvs = 0;
   int completed_messages =
     find_how_many_messages_can_be_polled(qp_meta->recv_cq, qp_meta->recv_wc,
@@ -690,8 +690,8 @@ static inline void poll_acks(context_t *ctx)
 
   qp_meta->polled_messages = 0;
   while (qp_meta->polled_messages < completed_messages) {
-    volatile ack_mes_ud_t *incoming_acks = (volatile ack_mes_ud_t *) qp_meta->recv_fifo->fifo;
-    ack_mes_t *ack = (ack_mes_t *) &incoming_acks[recv_fifo->pull_ptr].ack;
+    volatile ctx_ack_mes_ud_t *incoming_acks = (volatile ctx_ack_mes_ud_t *) qp_meta->recv_fifo->fifo;
+    ctx_ack_mes_t *ack = (ctx_ack_mes_t *) &incoming_acks[recv_fifo->pull_ptr].ack;
     uint32_t ack_num = ack->ack_num;
     check_ack_message_count_stats(p_ops, ack, recv_fifo->pull_ptr, ack_num, ctx->t_id);
 

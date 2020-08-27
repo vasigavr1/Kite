@@ -115,8 +115,8 @@ static inline void check_debug_cntrs(uint32_t *credit_debug_cnt, uint32_t *wait_
   if (unlikely(wait_dbg_counter[ACK_QP_ID] > M_512)) {
     my_printf(red, "Worker %d waits for acks \n", t_id);
     if (VERBOSE_DBG_COUNTER) {
-      ack_mes_ud_t *ack_buf = (ack_mes_ud_t *) (buf);
-      ack_mes_t *ack = &ack_buf[ack_pull_ptr].ack;
+      ctx_ack_mes_ud_t *ack_buf = (ctx_ack_mes_ud_t *) (buf);
+      ctx_ack_mes_t *ack = &ack_buf[ack_pull_ptr].ack;
       uint64_t l_id = ack->l_id;
       uint8_t message_opc = ack->opcode;
       my_printf(cyan, "Wrkr %d, polling on index %u, polled opc %u, 1st ack opcode: %u, l_id %lu, expected l_id %lu\n",
@@ -761,13 +761,13 @@ static inline bool check_entry_validity_with_key(struct key *incoming_key, mica_
 }
 
 // When polling an ack message
-static inline void check_ack_message_count_stats(p_ops_t* p_ops, ack_mes_t* ack,
+static inline void check_ack_message_count_stats(p_ops_t* p_ops, ctx_ack_mes_t* ack,
                                                  uint32_t index, uint32_t ack_num, uint16_t t_id)
 {
   if (ENABLE_ASSERTIONS) {
     assert(ack_num > 0);
     assert(ack->opcode == OP_ACK);
-    //      wait_for_the_entire_ack((volatile ack_mes_t *)ack, t_id, index);
+    //      wait_for_the_entire_ack((volatile ctx_ack_mes_t *)ack, t_id, index);
     assert(ack->m_id < MACHINE_NUM);
     uint64_t l_id = ack->l_id;
     uint64_t pull_lid = p_ops->local_w_id;
@@ -1676,7 +1676,7 @@ static inline void print_after_stealing_proposed(mica_op_t *kv_ptr,
 
 
 //-------------------------SENDING ACKS
-static inline void checks_stats_prints_when_sending_acks(ack_mes_t *acks,
+static inline void checks_stats_prints_when_sending_acks(ctx_ack_mes_t *acks,
                                                          uint8_t m_i, uint16_t t_id)
 {
   if (ENABLE_STAT_COUNTING) {
