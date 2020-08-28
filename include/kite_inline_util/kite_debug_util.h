@@ -144,28 +144,28 @@ static inline void check_debug_cntrs(uint32_t *credit_debug_cnt, uint32_t *wait_
   if (unlikely(wait_dbg_counter[R_REP_QP_ID] > M_512)) {
     my_printf(red, "Worker %d waits for r_reps \n", t_id);
     if (VERBOSE_DBG_COUNTER) {
-      r_rep_mes_ud_t *r_rep_buf =
-        (r_rep_mes_ud_t *) (buf + ACK_BUF_SIZE + W_BUF_SIZE + R_BUF_SIZE);
-      struct r_rep_message *r_rep_mes = (struct r_rep_message *)&r_rep_buf[r_rep_pull_ptr].r_rep_mes;
-      uint64_t l_id = r_rep_mes->l_id;
-      uint8_t message_opc = r_rep_mes->opcode;
-      my_printf(cyan, "Wrkr %d, polling on index %u, polled opc %u, 1st r_rep opcode: %u, l_id %lu, expected l_id %lu\n",
-                t_id, r_rep_pull_ptr, message_opc, r_rep_mes->opcode, l_id, p_ops->local_r_id);
-      MOD_INCR(r_rep_pull_ptr, R_REP_BUF_SLOTS);
-      r_rep_mes = (struct r_rep_message *)&r_rep_buf[r_rep_pull_ptr].r_rep_mes;
-      l_id = r_rep_mes->l_id;
-      message_opc = r_rep_mes->opcode;
-      my_printf(cyan, "Next index %u,polled opc %u, 1st r_rep opcode: %u, l_id %lu, expected l_id %lu\n",
-                r_rep_pull_ptr, message_opc, r_rep_mes->opcode, l_id, p_ops->local_r_id);
-      for (int i = 0; i < R_REP_BUF_SLOTS; ++i) {
-        if (r_rep_mes->opcode == READ_REPLY) {
-          my_printf(green, "GOOD OPCODE in index %d, l_id %u \n", i, r_rep_mes->l_id);
-        } else
-          my_printf(red, "BAD OPCODE in index %d, l_id %u, from machine: %u  \n", i,
-                    r_rep_mes->l_id,
-                    r_rep_mes->m_id);
-
-      }
+      //r_rep_mes_ud_t *r_rep_buf =
+      //  (r_rep_mes_ud_t *) (buf + ACK_BUF_SIZE + W_BUF_SIZE + R_BUF_SIZE);
+      //struct r_rep_message *r_rep_mes = (struct r_rep_message *)&r_rep_buf[r_rep_pull_ptr].r_rep_mes;
+      //uint64_t l_id = r_rep_mes->l_id;
+      //uint8_t message_opc = r_rep_mes->opcode;
+      //my_printf(cyan, "Wrkr %d, polling on index %u, polled opc %u, 1st r_rep opcode: %u, l_id %lu, expected l_id %lu\n",
+      //          t_id, r_rep_pull_ptr, message_opc, r_rep_mes->opcode, l_id, p_ops->local_r_id);
+      //MOD_INCR(r_rep_pull_ptr, R_REP_BUF_SLOTS);
+      //r_rep_mes = (struct r_rep_message *)&r_rep_buf[r_rep_pull_ptr].r_rep_mes;
+      //l_id = r_rep_mes->l_id;
+      //message_opc = r_rep_mes->opcode;
+      //my_printf(cyan, "Next index %u,polled opc %u, 1st r_rep opcode: %u, l_id %lu, expected l_id %lu\n",
+      //          r_rep_pull_ptr, message_opc, r_rep_mes->opcode, l_id, p_ops->local_r_id);
+      //for (int i = 0; i < R_REP_BUF_SLOTS; ++i) {
+      //  if (r_rep_mes->opcode == READ_REPLY) {
+      //    my_printf(green, "GOOD OPCODE in index %d, l_id %u \n", i, r_rep_mes->l_id);
+      //  } else
+      //    my_printf(red, "BAD OPCODE in index %d, l_id %u, from machine: %u  \n", i,
+      //              r_rep_mes->l_id,
+      //              r_rep_mes->m_id);
+      //
+      //}
     }
     print_wrkr_stats(t_id);
     wait_dbg_counter[R_REP_QP_ID] = 0;
