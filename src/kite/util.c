@@ -114,51 +114,53 @@ void kite_static_assert_compile_parameters()
 
 void kite_print_parameters_in_the_start()
 {
+  emphatic_print(green, "KITE");
+  if (ENABLE_ASSERTIONS) {
+
+    printf("MICA OP capacity %ld/%d added padding %d  \n",
+           sizeof(mica_op_t), MICA_OP_SIZE, MICA_OP_PADDING_SIZE);
 
 
-  printf("MICA OP capacity %ld/%d added padding %d  \n",
-         sizeof(mica_op_t), MICA_OP_SIZE, MICA_OP_PADDING_SIZE);
+    printf("Rmw-local_entry %ld \n", sizeof(loc_entry_t));
+    printf("quorum-num %d \n", QUORUM_NUM);
+
+    my_printf(green, "READ REPLY: r_rep message %lu/%d, r_rep message ud req %llu/%d,"
+                "read info %llu\n",
+              sizeof(struct r_rep_message), R_REP_SEND_SIZE,
+              sizeof(r_rep_mes_ud_t), R_REP_RECV_SIZE,
+              sizeof(r_info_t));
+    my_printf(green, "W_COALESCE %d, R_COALESCE %d, ACC_COALESCE %u, "
+                "PROPOSE COALESCE %d, COM_COALESCE %d, MAX_WRITE_COALESCE %d,"
+                "MAX_READ_COALESCE %d \n",
+              W_COALESCE, R_COALESCE, ACC_COALESCE, PROP_COALESCE, COM_COALESCE,
+              MAX_WRITE_COALESCE, MAX_READ_COALESCE);
 
 
-  printf("Rmw-local_entry %ld \n", sizeof(loc_entry_t));
-  printf("quorum-num %d \n", QUORUM_NUM);
-
-  my_printf(green, "READ REPLY: r_rep message %lu/%d, r_rep message ud req %llu/%d,"
-                 "read info %llu\n",
-               sizeof(struct r_rep_message), R_REP_SEND_SIZE,
-               sizeof(r_rep_mes_ud_t), R_REP_RECV_SIZE,
-               sizeof (r_info_t));
-  my_printf(green, "W_COALESCE %d, R_COALESCE %d, ACC_COALESCE %u, "
-                 "PROPOSE COALESCE %d, COM_COALESCE %d, MAX_WRITE_COALESCE %d,"
-                 "MAX_READ_COALESCE %d \n",
-               W_COALESCE, R_COALESCE, ACC_COALESCE, PROP_COALESCE, COM_COALESCE,
-               MAX_WRITE_COALESCE, MAX_READ_COALESCE);
-
-
-  my_printf(cyan, "ACK: ack message %lu/%d, ack message ud req %llu/%d\n",
+    my_printf(cyan, "ACK: ack message %lu/%d, ack message ud req %llu/%d\n",
               sizeof(ctx_ack_mes_t), CTX_ACK_SIZE,
               sizeof(ctx_ack_mes_ud_t), CTX_ACK_RECV_SIZE);
-  my_printf(yellow, "READ: read %lu/%d, read message %lu/%d, read message ud req %lu/%d\n",
-                sizeof(struct read), R_SIZE,
-                sizeof(struct r_message), R_SEND_SIZE,
-                sizeof(r_mes_ud_t), R_RECV_SIZE);
-  my_printf(cyan, "Write: write %lu/%d, write message %lu/%d, write message ud req %llu/%d\n",
+    my_printf(yellow, "READ: read %lu/%d, read message %lu/%d, read message ud req %lu/%d\n",
+              sizeof(struct read), R_SIZE,
+              sizeof(struct r_message), R_SEND_SIZE,
+              sizeof(r_mes_ud_t), R_RECV_SIZE);
+    my_printf(cyan, "Write: write %lu/%d, write message %lu/%d, write message ud req %llu/%d\n",
               sizeof(write_t), W_SIZE,
               sizeof(struct w_message), W_SEND_SIZE,
               sizeof(w_mes_ud_t), W_RECV_SIZE);
 
-  my_printf(green, "W INLINING %d, PENDING WRITES %d \n",
-               W_ENABLE_INLINING, PENDING_WRITES);
-  my_printf(green, "R INLINING %d, PENDING_READS %d \n",
-               R_ENABLE_INLINING, PENDING_READS);
-  my_printf(green, "R_REP INLINING %d \n",
-               R_REP_ENABLE_INLINING);
-  my_printf(cyan, "W CREDITS %d, W BUF SLOTS %d, W BUF SIZE %d\n",
+    my_printf(green, "W INLINING %d, PENDING WRITES %d \n",
+              W_ENABLE_INLINING, PENDING_WRITES);
+    my_printf(green, "R INLINING %d, PENDING_READS %d \n",
+              R_ENABLE_INLINING, PENDING_READS);
+    my_printf(green, "R_REP INLINING %d \n",
+              R_REP_ENABLE_INLINING);
+    my_printf(cyan, "W CREDITS %d, W BUF SLOTS %d, W BUF SIZE %d\n",
               W_CREDITS, W_BUF_SLOTS, W_BUF_SIZE);
 
-  my_printf(yellow, "Remote Quorum Machines %d \n", REMOTE_QUORUM);
-  my_printf(green, "SEND W DEPTH %d, MESSAGES_IN_BCAST_BATCH %d, W_BCAST_SS_BATCH %d \n",
-               SEND_W_Q_DEPTH, MESSAGES_IN_BCAST_BATCH, W_BCAST_SS_BATCH);
+    my_printf(yellow, "Remote Quorum Machines %d \n", REMOTE_QUORUM);
+    my_printf(green, "SEND W DEPTH %d, MESSAGES_IN_BCAST_BATCH %d, W_BCAST_SS_BATCH %d \n",
+              SEND_W_Q_DEPTH, MESSAGES_IN_BCAST_BATCH, W_BCAST_SS_BATCH);
+  }
 }
 
 void kite_init_globals()
@@ -177,9 +179,6 @@ void kite_init_globals()
   send_bit_vector.state = UP_STABLE;
   memset(committed_glob_sess_rmw_id, 0, GLOBAL_SESSION_NUM * sizeof(uint64_t));
 }
-
-
-
 
 
 void dump_stats_2_file(struct stats* st){

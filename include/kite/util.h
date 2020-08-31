@@ -74,7 +74,6 @@ static void kite_init_functionality(int argc, char *argv[])
   kite_print_parameters_in_the_start();
   generic_static_assert_compile_parameters();
   kite_static_assert_compile_parameters();
-  kite_print_parameters_in_the_start();
   generic_init_globals(QP_NUM);
   kite_init_globals();
   handle_program_inputs(argc, argv);

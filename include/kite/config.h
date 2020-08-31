@@ -36,9 +36,9 @@ void kite_stats(stats_ctx_t *ctx);
 
 #define ENABLE_COMMITS_WITH_NO_VAL 1
 #define ENABLE_CAS_CANCELLING 1
-#define ENABLE_ALL_ABOARD 0
+#define ENABLE_ALL_ABOARD 1
 #define EMULATE_ABD 0
-#define TURN_OFF_KITE_ 0
+#define TURN_OFF_KITE_ 1
 #define TURN_OFF_KITE (EMULATE_ABD ? 1 : TURN_OFF_KITE_)
 #define ACCEPT_IS_RELEASE 0
 
@@ -55,30 +55,9 @@ void kite_stats(stats_ctx_t *ctx);
 #define COMMIT_LOGS 0
 #define DUMP_STATS_2_FILE 0
 
-//q_info config
-#define Q_INFO_NUM_SEND_WRS 2
-#define Q_INFO_CREDIT_TARGETS 2
-
-
-
-
-// MULTICAST
-#define MCAST_FLOW_NUM 2 // reads and writes
-#define MCAST_R_FLOW 0
-#define MCAST_W_FLOW 1
-#define MCAST_FLR_RECV_QP_NUM 1
-#define MCAST_RECV_QP_NUM 2
-#define MCAST_SEND_QP_NUM 2
-
-#define MCAST_GROUPS_PER_FLOW MACHINE_NUM
 
 #define R_SEND_MCAST_QP 0
 #define W_SEND_MCAST_QP 1
-
-#define R_RECV_MCAST_QP 0
-#define W_RECV_MCAST_QP 1 //
-
-
 
 
 //////////////////////////////////////////////////////
