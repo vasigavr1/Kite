@@ -103,25 +103,7 @@ static inline const char* help_state_to_str(uint8_t state)
   }
 }
 
-static inline const char* opcode_to_str(uint8_t opcode)
-{
-  //const char *ret_str;
-  switch(opcode) {
-    case PROPOSE_OP: return "PROPOSE_OP";
-    case COMMIT_OP: return "COMMIT_OP";
-    case ACCEPT_OP: return "ACCEPT_OP";
-    case ACCEPT_OP_BIT_VECTOR: return "ACCEPT_OP_BIT_VECTOR";
-    case ACCEPT_OP_NO_CREDITS: return "ACCEPT_OP_NO_CREDITS";
-    case OP_RELEASE: return "OP_RELEASE";
-    case OP_ACQUIRE: return "OP_ACQUIRE";
-    case KVS_OP_GET: return "KVS_OP_GET";
-    case KVS_OP_PUT: return "KVS_OP_PUT";
-    default: assert(false);
-      //ret_str = malloc(20);
-      //sprintf(ret_str, "%u", opcode);
-      //return ret_str;
-  }
-}
+
 
 
 // Generic CAS

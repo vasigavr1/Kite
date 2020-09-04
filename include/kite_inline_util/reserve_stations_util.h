@@ -1025,11 +1025,6 @@ static inline bool fill_trace_op(context_t *ctx,
 
   if (ENABLE_ASSERTIONS && DEBUG_SESSIONS)
     p_ops->debug_loop->ses_dbg->dbg_cnt[working_session] = 0;
-  if (MEASURE_LATENCY) {
-    assert(false);
-    start_measurement(latency_info, (uint32_t) working_session, t_id, op->opcode);
-  }
-
   //if (w_pull_ptr[[working_session]] == 100000) my_printf(yellow, "Working ses %u \n", working_session);
   //my_printf(yellow, "BEFORE: OP_i %u -> session %u, opcode: %u \n", op_i, working_session, ops[op_i].opcode);
   //my_printf(yellow, "Wrkr %u, session %u, opcode %u \n", t_id, working_session, op->opcode);
