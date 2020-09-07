@@ -46,10 +46,6 @@ static inline void clean_up_on_KVS_miss(trace_op_t *op, p_ops_t *p_ops,
     p_ops->all_sessions_stalled = false;
     signal_completion_to_client(op->session_id, op->index_to_req_array, t_id);
     t_stats[t_id].cache_hits_per_thread--;
-    if (MEASURE_LATENCY && t_id == LATENCY_THREAD && machine_id == LATENCY_MACHINE &&
-        latency_info->measured_req_flag != NO_REQ &&
-        session_id == latency_info->measured_sess_id)
-      latency_info->measured_req_flag = NO_REQ;
   }
 }
 
@@ -1404,10 +1400,6 @@ static inline void read_commit_acquires_free_sess(p_ops_t *p_ops,
   }
   p_ops->sess_info[p_ops->r_session_id[pull_ptr]].stalled = false;
   p_ops->all_sessions_stalled = false;
-  if (MEASURE_LATENCY && t_id == LATENCY_THREAD && machine_id == LATENCY_MACHINE &&
-      latency_info->measured_req_flag == ACQUIRE &&
-      p_ops->r_session_id[pull_ptr] == latency_info->measured_sess_id)
-    report_latency(latency_info);
 }
 
 
