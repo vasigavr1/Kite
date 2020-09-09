@@ -409,9 +409,9 @@ typedef struct trace_op {
   bool attempt_all_aboard;
   struct ts_tuple ts;
   struct key key;
-  uint8_t opcode;// if the opcode is 0, it has never been RMWed, if it's 1 it has
+  uint8_t opcode;
   uint8_t val_len; // this represents the maximum value len
-  uint8_t value[VALUE_SIZE]; // if it's an RMW the first 4 bytes point to the entry
+  uint8_t value[VALUE_SIZE];
   uint8_t *value_to_write;
   uint8_t *value_to_read; //compare value for CAS/  addition argument for F&A
   uint32_t index_to_req_array;
