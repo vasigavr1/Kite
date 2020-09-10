@@ -240,7 +240,7 @@ void kite_init_qp_meta(context_t *ctx)
 {
   per_qp_meta_t *qp_meta = ctx->qp_meta;
   create_per_qp_meta(&qp_meta[R_QP_ID], MAX_R_WRS,
-                     MAX_RECV_R_WRS, SEND_BCAST_RECV_BCAST,  RECV_REQ,
+                     MAX_RECV_R_WRS, SEND_BCAST_RECV_BCAST, RECV_REQ,
                      R_REP_QP_ID,
                      REM_MACH_NUM, REM_MACH_NUM, R_BUF_SLOTS,
                      R_RECV_SIZE, R_SEND_SIZE, ENABLE_MULTICAST, ENABLE_MULTICAST,
@@ -250,7 +250,7 @@ void kite_init_qp_meta(context_t *ctx)
 
   ///
   create_per_qp_meta(&qp_meta[W_QP_ID], MAX_W_WRS,
-                     MAX_RECV_W_WRS, SEND_BCAST_RECV_BCAST,  RECV_REQ,
+                     MAX_RECV_W_WRS, SEND_BCAST_RECV_BCAST, RECV_REQ,
                      ACK_QP_ID,
                      REM_MACH_NUM, REM_MACH_NUM, W_BUF_SLOTS,
                      W_RECV_SIZE, W_SEND_SIZE, ENABLE_MULTICAST, ENABLE_MULTICAST,

@@ -389,51 +389,6 @@ static inline void send_r_reps(context_t *ctx)
 }
 
 
-// Send a batched ack that denotes the first local write id and the number of subsequent lids that are being acked
-static inline void send_acks(context_t *ctx)
-{
-  per_qp_meta_t *qp_meta = &ctx->qp_meta[ACK_QP_ID];
-  p_ops_t *p_ops = (p_ops_t *) ctx->appl_ctx;
-  ctx_ack_mes_t *acks = (ctx_ack_mes_t *) qp_meta->send_fifo->fifo;
-  uint8_t ack_i = 0, prev_ack_i = 0, first_wr = 0;
-  struct ibv_send_wr *bad_send_wr;
-  uint32_t recvs_to_post_num = 0;
-
-  for (uint8_t m_i = 0; m_i < MACHINE_NUM; m_i++) {
-    if (acks[m_i].opcode == OP_ACK) continue;
-    checks_stats_prints_when_sending_acks(acks, m_i, ctx->t_id);
-    acks[m_i].opcode = OP_ACK;
-
-    selective_signaling_for_unicast(&qp_meta->sent_tx, qp_meta->ss_batch, qp_meta->send_wr,
-                                    m_i, qp_meta->send_cq, true, qp_meta->send_string, ctx->t_id);
-    if (ack_i > 0) {
-      if (DEBUG_ACKS)
-        my_printf(yellow, "Wrkr %u, ack %u points to ack %u \n", ctx->t_id, prev_ack_i, m_i);
-      qp_meta->send_wr[prev_ack_i].next = &qp_meta->send_wr[m_i];
-    }
-    else first_wr = m_i;
-
-    recvs_to_post_num += acks[m_i].credits;
-    ack_i++;
-    prev_ack_i = m_i;
-  }
-  // RECEIVES for writes
-  if (recvs_to_post_num > 0) {
-    post_recvs_with_recv_info(ctx->qp_meta[W_QP_ID].recv_info, recvs_to_post_num);
-    checks_when_posting_write_receives(qp_meta->recv_info, recvs_to_post_num, ack_i);
-  }
-  // SEND the acks
-  if (ack_i > 0) {
-    if (DEBUG_ACKS) printf("Wrkr %u send %u acks, last recipient %u, first recipient %u \n",
-                           ctx->t_id, ack_i, prev_ack_i, first_wr);
-    qp_meta->send_wr[prev_ack_i].next = NULL;
-    int ret = ibv_post_send(qp_meta->send_qp, &qp_meta->send_wr[first_wr], &bad_send_wr);
-    if (ENABLE_ASSERTIONS) CPE(ret, "ACK ibv_post_send error", ret);
-  }
-}
-
-
-
 /* ---------------------------------------------------------------------------
 //------------------------------ POLLING-------------------------------------
 //---------------------------------------------------------------------------*/
