@@ -22,9 +22,9 @@ void kite_stats(stats_ctx_t *ctx);
 
 
 // CORE CONFIGURATION
-#define R_CREDITS 3 //
+#define R_CREDITS 3//
 #define W_CREDITS 8
-#define MAX_READ_SIZE 300 //300 in terms of bytes for Reads/Acquires/RMW-Acquires/Proposes
+#define MAX_READ_SIZE 730 //300 in terms of bytes for Reads/Acquires/RMW-Acquires/Proposes
 #define MAX_WRITE_SIZE 800 // only writes 400 -- only rmws 1200 in terms of bytes for Writes/Releases/Accepts/Commits
 //#define MIN_SS_BATCH 127// The minimum SS batch -- moved to top
 #define MEASURE_SLOW_PATH 0

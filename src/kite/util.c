@@ -1,5 +1,5 @@
 #include <rdma_gen_util.h>
-#include <trace_util.h>
+#include "../../../odlib/include/trace/trace_util.h"
 #include "util.h"
 #include "generic_inline_util.h"
 

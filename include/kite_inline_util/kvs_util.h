@@ -10,7 +10,7 @@
 #include "generic_util.h"
 #include "kite_debug_util.h"
 #include "kite_config_util.h"
-#include "client_if_util.h"
+#include "wrkr_side_calls.h"
 #include "paxos_util.h"
 
 
