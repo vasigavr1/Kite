@@ -980,7 +980,7 @@ static inline bool fill_trace_op(context_t *ctx,
   // Create some back pressure from the buffers, since the sessions may never be stalled
   if (!EMULATE_ABD) {
     if (op->opcode == (uint8_t) KVS_OP_PUT) writes_num++;
-    //if (opcode == (uint8_t) OP_RELEASE) writes_num+= 2;
+    //if (opcode == (uint8_t) OP_RELEASE) write_num+= 2;
     // A write (relaxed or release) may first trigger a read
     reads_num += op->opcode == (uint8_t) OP_ACQUIRE ? 2 : 1;
     if (p_ops->virt_w_size + writes_num >= MAX_ALLOWED_W_SIZE ||
