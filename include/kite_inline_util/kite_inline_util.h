@@ -975,7 +975,7 @@ static inline void kite_checks_at_loop_start(context_t *ctx)
 }
 
 
-static void main_loop(context_t *ctx)
+static void kite_main_loop(context_t *ctx)
 {
   p_ops_t *p_ops = (p_ops_t *) ctx->appl_ctx;
   while(true) {
