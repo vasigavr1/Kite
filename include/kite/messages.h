@@ -21,29 +21,29 @@
 
 
 // WRITES: Releases, writes, accepts and commits -- all sizes in BYTES
-#define W_MES_HEADER (11) // local id + m_id+ w_num + opcode
+#define W_MES_HEADER (12) // local id + m_id+ w_num + opcode
 #define EFFECTIVE_MAX_W_SIZE (MAX_WRITE_SIZE - W_MES_HEADER) // all messages have the same header
 
 // Writes-Releases
-#define WRITE_HEADER (KEY_SIZE + TS_TUPLE_SIZE + 2) // opcode + val_len
+#define WRITE_HEADER (KEY_SIZE + TS_TUPLE_SIZE + 3) // opcode + val_len
 #define W_SIZE (VALUE_SIZE + WRITE_HEADER)
 #define W_COALESCE (EFFECTIVE_MAX_W_SIZE / W_SIZE)
 #define W_MES_SIZE (W_MES_HEADER + (W_SIZE * W_COALESCE))
 
 // ACCEPTS -- ACCEPT coalescing is derived from max write capacity. ACC reps are derived from accept coalescing
-#define ACCEPT_HEADER (35 + 5) //original l_id 8 key 8 rmw-id 10, last-committed rmw_id 10, ts 5 log_no 4 opcode 1, val_len 1
+#define ACCEPT_HEADER (35 + 5 + 4) //original l_id 8 key 8 rmw-id 10, last-committed rmw_id 10, ts 5 log_no 4 opcode 1, val_len 1
 #define ACCEPT_SIZE (ACCEPT_HEADER + RMW_VALUE_SIZE)
 #define ACC_COALESCE (EFFECTIVE_MAX_W_SIZE / ACCEPT_SIZE)
 #define ACC_MES_SIZE (W_MES_HEADER + (ACCEPT_SIZE * ACC_COALESCE))
 
 // COMMITS
-#define COMMIT_HEADER (27)
+#define COMMIT_HEADER (27 + 1)
 #define COMMIT_SIZE (COMMIT_HEADER + RMW_VALUE_SIZE)
 #define COM_COALESCE (EFFECTIVE_MAX_W_SIZE / COMMIT_SIZE)
 #define COM_MES_SIZE (W_MES_HEADER + (COMMIT_SIZE * COM_COALESCE))
 
 // COMMIT_NO_VAL
-#define COMMIT_NO_VAL_SIZE (22)
+#define COMMIT_NO_VAL_SIZE (22 + 2)
 #define COM_NO_VAL_COALESCE (EFFECTIVE_MAX_W_SIZE / COMMIT_NO_VAL_SIZE)
 #define COM_NO_VAL_MES_SIZE (W_MES_HEADER + (COMMIT_NO_VAL_SIZE * COM_NO_VAL_COALESCE))
 
@@ -68,11 +68,11 @@
 #define EFFECTIVE_MAX_R_SIZE (MAX_READ_SIZE - R_MES_HEADER)
 
 // reads/acquires/rmw-acquire
-#define R_SIZE (KEY_SIZE + TS_TUPLE_SIZE + 1 + 4)// key+ version + m_id + opcode + log_no
+#define R_SIZE (KEY_SIZE + TS_TUPLE_SIZE + 1 + 4 + 2)// key+ version + m_id + opcode + log_no
 #define R_COALESCE (EFFECTIVE_MAX_R_SIZE / R_SIZE)
 #define R_MES_SIZE (R_MES_HEADER + (R_SIZE * R_COALESCE))
 // proposes
-#define PROP_SIZE 42  // l_id 8, RMW_id- 8, ts 5, key 8, log_number 4, opcode 1 + basets 8
+#define PROP_SIZE (42 + 2) // l_id 8, RMW_id- 8, ts 5, key 8, log_number 4, opcode 1 + basets 8
 #define PROP_COALESCE (EFFECTIVE_MAX_R_SIZE / PROP_SIZE)
 #define PROP_MES_SIZE (R_MES_HEADER + (PROP_SIZE * PROP_COALESCE))
 
@@ -139,77 +139,74 @@
 
 
 
-
-//// The format of an ack message
-//typedef struct ctx_ack_message {
-//  uint64_t l_id; // the first local id that is being acked
-//  uint32_t ack_num;
-//  uint16_t credits;
-//  uint8_t m_id;
-//  uint8_t opcode;
-//} __attribute__((__packed__)) ack_mes_t;
-//
-//
-//typedef struct ctx_ack_message_ud_req {
-//  uint8_t grh[GRH_SIZE];
-//  ack_mes_t ack;
-//} ctx_ack_mes_ud_t;
-
-
 typedef struct write {
-  uint8_t m_id;
   uint32_t version;
-  struct key key;
+  uint8_t m_id;
   uint8_t opcode;
   uint8_t val_len;
+  uint8_t unused;
+  mica_key_t key;
   uint8_t value[VALUE_SIZE];
 } __attribute__((__packed__)) write_t;
 
 
 struct accept {
   struct network_ts_tuple ts;
-  struct key key ;
   uint8_t opcode;
   uint8_t val_len;
-  uint8_t value[RMW_VALUE_SIZE];
+  uint8_t unused;
+  mica_key_t key;
   uint64_t t_rmw_id ; // the upper bits are overloaded to indicate that the accept is trying to flip a bit
-  uint32_t log_no ;
   uint64_t l_id;
-  struct network_ts_tuple base_ts;
+  uint32_t log_no;
+  struct ts_tuple base_ts;
+  //uint8_t unused_[3];
+  uint8_t value[RMW_VALUE_SIZE];
+
+
 } __attribute__((__packed__));
 
 
 struct commit_no_val {
-  uint8_t unused;
   uint32_t log_no;
-  struct key key;
+  uint8_t unused;
   uint8_t opcode;
+  uint8_t unused_[2];
+  mica_key_t key;
+
   uint64_t t_rmw_id; //rmw lid to be committed
 }__attribute__((__packed__));
 
 struct commit {
   struct network_ts_tuple base_ts;
-  struct key key;
   uint8_t opcode;
+  uint8_t val_len;
+  uint8_t unused;
+  mica_key_t key;
+
   uint64_t t_rmw_id; //rmw lid to be committed
   uint32_t log_no;
-  uint8_t val_len;
+
   uint8_t value[VALUE_SIZE];
 } __attribute__((__packed__));
 
 //
 struct read {
   struct network_ts_tuple ts;
-  struct key key;
   uint8_t opcode;
+  uint8_t unused[2];
+  mica_key_t key;
+
   uint32_t log_no;
 } __attribute__((__packed__));
 
 //
 struct propose {
   struct network_ts_tuple ts;
-  struct key key;
   uint8_t opcode;
+  uint8_t unused[2];
+  mica_key_t key;
+
   uint64_t t_rmw_id;
   uint32_t log_no;
   uint64_t l_id; // the l_id of the rmw local_entry
@@ -221,18 +218,21 @@ struct propose {
 /*------- HEADERS---------------------- */
 
 typedef struct w_message {
+  uint64_t l_id;
   uint8_t m_id;
   uint8_t coalesce_num;
   uint8_t opcode;
-  uint64_t l_id ;
+  uint8_t unused;
+
   write_t write[W_COALESCE];
 } __attribute__((__packed__)) w_mes_t;
 
 //
 typedef struct r_message {
+  uint64_t l_id;
   uint8_t coalesce_num;
   uint8_t m_id;
-  uint64_t l_id ;
+
   struct read read[R_COALESCE];
 } __attribute__((__packed__)) r_mes_t;
 

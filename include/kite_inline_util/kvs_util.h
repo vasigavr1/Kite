@@ -332,7 +332,8 @@ static inline void KVS_updates_accepts(struct accept *acc, mica_op_t *kv_ptr,
         //print_treiber_top((struct top *) kv_ptr->last_accepted_value, "Receiving remote accept", green);
 //        my_printf(green, " kv_ptr Last committed log no log_no %u acc logno %u\n",
 //                  kv_ptr->last_committed_log_no, kv_ptr->log_no, acc->log_no);
-        assign_netw_ts_to_ts(&kv_ptr->base_acc_ts, &acc->base_ts);
+//        assign_netw_ts_to_ts(&kv_ptr->base_acc_ts, &acc->base_ts);
+        kv_ptr->base_acc_ts = acc->base_ts;
       }
     }
   }
