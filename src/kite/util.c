@@ -267,9 +267,9 @@ void kite_init_qp_meta(context_t *ctx)
                      0, R_REP_MES_HEADER,
                      "send r_reps", "recv r_reps");
   ///
-  crate_ack_qp_meta(&qp_meta[ACK_QP_ID],
-                    W_QP_ID, REM_MACH_NUM,
-                    REM_MACH_NUM, W_CREDITS);
+  create_ack_qp_meta(&qp_meta[ACK_QP_ID],
+                     W_QP_ID, REM_MACH_NUM,
+                     REM_MACH_NUM, W_CREDITS);
 }
 
 kite_debug_t *init_debug_loop_struct()
