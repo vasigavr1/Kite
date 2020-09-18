@@ -467,6 +467,7 @@ static inline void poll_for_writes(context_t *ctx,
     qp_meta->polled_messages++;
   }
   qp_meta->completed_but_not_polled = completed_messages - qp_meta->polled_messages;
+  qp_meta->recv_info->posted_recvs -= qp_meta->polled_messages;
 
   if (writes_for_kvs > 0) {
     if (DEBUG_WRITES) my_printf(yellow, "Worker %u is going with %u writes to the kvs \n", ctx->t_id, writes_for_kvs);
