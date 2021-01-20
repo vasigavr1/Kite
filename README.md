@@ -35,5 +35,4 @@ The protocol is implemented over UD Sends and Receives.
 All messages are batched.
 
 --------------------------------------------------------------
-The title of the project is inspired by this
-https://www.youtube.com/watch?v=wLaRG--hCTI
+The title of the project is inspired by [this](https://www.youtube.com/watch?v=wLaRG--hCTI)
