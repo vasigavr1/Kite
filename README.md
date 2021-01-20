@@ -50,37 +50,6 @@ Also a User Interface to issue requests from the Command Line is available.
 The protocol is implemented over UD Sends and Receives.
 All messages are batched.
 
-
-## Repository Contains
-1. A modified version of MICA that serves as the store for Kite
-2. A layer that implements the protocols that run over MICA
-
-## Requirements
-RDMA capable NICs and Infiniband switch
-
-
-### Dependencies
-1. numactl
-2. libgsl0-dev
-3. libnuma-dev
-4. MLNX_OFED_LINUX-4.1-1.0.2.0
-
-### Settings
-1. Run subnet-manager in one of the nodes: '/etc/init.d/opensmd start'
-2. On every node apply the following:
-3. echo 8192 | tee /sys/devices/system/node/node0/hugepages/hugepages-2048kB/nr_hugepages /sys/devices/system/node/node1/hugepages/hugepages-2048kB/nr_hugepages > /dev/null
-4. echo 10000000001 | tee /proc/sys/kernel/shmmax /proc/sys/kernel/shmall > /dev/null
- * Make sure that the changes have been applied using cat on the above files
- * The above changes are temporary (i.e. need to be performed after a reboot)
-
-## How to run Kite
-In kite/src/kite there is a script "run-kite.sh"
-To run Kite:
-1. Modify the script to contain the ip-addresses of the machines that will run Kite
-2. Run the script in all machines.
-
-The script bin/copy-kite-executables.sh  can be used to compile in one machine and then copy the executable in the rest of the machines. (The machines must be specified within the script).
-
-## Tested on
-* Infiniband cluster of 5 inter-connected nodes, via a Mellanox MSX6012F-BS switch, each one equiped with a single-port 56Gb Infiniband NIC (Mellanox MCX455A-FCAT PCIe-gen3 x16).
-* OS: Ubuntu 18.04.1 LTS (Kernel: 4.15.0-55-generic)
+--------------------------------------------------------------
+The title of the project is inspired by this
+https://www.youtube.com/watch?v=NQBFCaQPtEs
