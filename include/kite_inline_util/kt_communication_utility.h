@@ -5,12 +5,12 @@
 #ifndef KITE_COMMUNICATION_UTILITY_H
 #define KITE_COMMUNICATION_UTILITY_H
 
-#include "main.h"
-#include "latency_util.h"
-#include "kite_debug_util.h"
-#include "kite_config_util.h"
-#include "rdma_gen_util.h"
-#include "reserve_stations_util.h"
+#include "kt_main.h"
+#include "od_latency_util.h"
+#include "kt_debug_util.h"
+#include "kt_config_util.h"
+#include "od_rdma_gen_util.h"
+#include "kt_reserve_stations_util.h"
 
 
 static inline int find_how_many_write_messages_can_be_polled(struct ibv_cq *w_recv_cq, struct ibv_wc *w_recv_wc,

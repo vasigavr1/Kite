@@ -5,8 +5,8 @@
 #ifndef KITE_PAXOS_UTIL_H
 #define KITE_PAXOS_UTIL_H
 
-#include <config.h>
-#include "paxos_generic_util.h"
+#include <kt_config.h>
+#include "kt_paxos_generic_util.h"
 
 
 /*--------------------------------------------------------------------------

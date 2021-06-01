@@ -42,23 +42,22 @@ set(COMMON_FILES
         od-lib/include/general_util/config_util.h)
 
 set(KITE_SOURCE_FILES
-        src/kite/util.c
-        src/kite/stats.c
-        include/kite_inline_util/kite_inline_util.h
-        include/kite/main.h
-        include/kite/util.h
-        include/kite/config.h
-        include/kite/opcodes.h
-        include/kite_inline_util/generic_util.h
-        include/kite_inline_util/kvs_util.h
-        include/kite_inline_util/kite_debug_util.h
-        include/kite_inline_util/kite_config_util.h
-        include/kite_inline_util/paxos_util.h
-        include/kite_inline_util/reserve_stations_util.h
-        include/kite_inline_util/communication_utility.h
-        include/kite_inline_util/paxos_generic_util.h
-        include/kite/messages.h
-        include/kite/buffer_sizes.h
+        src/kite/kt_util.c
+        src/kite/kt_stats.c
+        include/kite_inline_util/kt_inline_util.h
+        include/kite/kt_util.h
+        include/kite/kt_config.h
+        include/kite/kt_opcodes.h
+        include/kite_inline_util/kt_generic_util.h
+        include/kite_inline_util/kt_kvs_util.h
+        include/kite_inline_util/kt_debug_util.h
+        include/kite_inline_util/kt_config_util.h
+        include/kite_inline_util/kt_paxos_util.h
+        include/kite_inline_util/kt_reserve_stations_util.h
+        include/kite_inline_util/kt_communication_utility.h
+        include/kite_inline_util/kt_paxos_generic_util.h
+        include/kite/kt_messages.h
+        include/kite/kt_buffer_sizes.h
         )
 
 

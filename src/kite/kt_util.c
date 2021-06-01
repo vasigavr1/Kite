@@ -1,7 +1,7 @@
-#include <rdma_gen_util.h>
-#include "../../../odlib/include/trace/trace_util.h"
-#include "util.h"
-#include "generic_inline_util.h"
+#include <od_rdma_gen_util.h>
+#include "../../../odlib/include/trace/od_trace_util.h"
+#include "kt_util.h"
+#include "od_generic_inline_util.h"
 
 struct bit_vector send_bit_vector;
 struct multiple_owner_bit conf_bit_vec[MACHINE_NUM];

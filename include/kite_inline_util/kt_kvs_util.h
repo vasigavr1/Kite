@@ -5,13 +5,13 @@
 #ifndef KITE_KVS_UTILITY_H
 #define KITE_KVS_UTILITY_H
 
-#include <config.h>
-#include "kvs.h"
-#include "generic_util.h"
-#include "kite_debug_util.h"
-#include "kite_config_util.h"
-#include "wrkr_side_calls.h"
-#include "paxos_util.h"
+#include <kt_config.h>
+#include "od_kvs.h"
+#include "kt_generic_util.h"
+#include "kt_debug_util.h"
+#include "kt_config_util.h"
+#include "od_wrkr_side_calls.h"
+#include "kt_paxos_util.h"
 
 
 

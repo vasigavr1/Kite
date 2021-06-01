@@ -3,11 +3,11 @@
 
 
 //#include "multicast.h"
-#include "kvs.h"
-#include "hrd.h"
-#include "main.h"
-#include "../../../odlib/include/network_api/network_context.h"
-#include <init_func.h>
+#include "od_kvs.h"
+#include "od_hrd.h"
+#include "kt_main.h"
+#include <od_network_context.h>
+#include <od_init_func.h>
 
 extern uint64_t seed;
 void kite_static_assert_compile_parameters();

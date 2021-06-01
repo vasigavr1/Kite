@@ -5,10 +5,10 @@
 #ifndef KITE_DEBUG_UTIL_H
 #define KITE_DEBUG_UTIL_H
 
-#include "config.h"
-#include "main.h"
-#include "generic_util.h"
-#include "debug_util.h"
+#include "kt_config.h"
+#include "kt_main.h"
+#include "kt_generic_util.h"
+#include "od_debug_util.h"
 
 
 /* ---------------------------------------------------------------------------

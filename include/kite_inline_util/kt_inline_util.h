@@ -2,23 +2,23 @@
 #define KITE_INLINE_UTIL_H
 
 //#include "kvs.h"
-#include "hrd.h"
+#include "od_hrd.h"
 
 
-#include "generic_util.h"
-#include "kvs_util.h"
-#include "kite_debug_util.h"
-#include "kite_config_util.h"
-#include "inline_util.h"
-#include "paxos_util.h"
-#include "reserve_stations_util.h"
-#include "communication_utility.h"
+#include "kt_generic_util.h"
+#include "kt_kvs_util.h"
+#include "kt_debug_util.h"
+#include "kt_config_util.h"
+#include "od_inline_util.h"
+#include "kt_paxos_util.h"
+#include "kt_reserve_stations_util.h"
+#include "kt_communication_utility.h"
 
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 #include <assert.h>
-#include <config.h>
+#include <kt_config.h>
 #include <infiniband/verbs.h>
 
 

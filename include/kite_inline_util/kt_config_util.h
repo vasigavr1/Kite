@@ -5,9 +5,9 @@
 #ifndef KITE_CONFIG_UTIL_H
 #define KITE_CONFIG_UTIL_H
 
-#include "config_util.h"
-#include "config.h"
-#include "main.h"
+#include "od_config_util.h"
+#include "kt_config.h"
+#include "kt_main.h"
 /* ---------------------------------------------------------------------------
 //------------------------------ CONF BITS HANDLERS---------------------------
 //---------------------------------------------------------------------------*/

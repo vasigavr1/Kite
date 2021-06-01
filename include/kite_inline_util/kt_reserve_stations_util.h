@@ -6,14 +6,14 @@
 #define KITE_RESERVE_STATIONS_UTIL_H
 
 
-#include <inline_util.h>
-#include "main.h"
-#include "latency_util.h"
-#include "kite_debug_util.h"
-#include "kite_config_util.h"
-#include "wrkr_side_calls.h"
-#include "paxos_util.h"
-#include "paxos_generic_util.h"
+#include <od_inline_util.h>
+#include "kt_main.h"
+#include "od_latency_util.h"
+#include "kt_debug_util.h"
+#include "kt_config_util.h"
+#include "od_wrkr_side_calls.h"
+#include "kt_paxos_util.h"
+#include "kt_paxos_generic_util.h"
 
 //-------------------------------------------------------------------------------------
 // -------------------------------FORWARD DECLARATIONS--------------------------------

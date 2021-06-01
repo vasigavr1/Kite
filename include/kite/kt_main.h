@@ -4,11 +4,11 @@
 #include <stdint.h>
 #include <pthread.h>
 #include <stdint-gcc.h>
-#include "city.h"
-#include "config.h"
-#include "messages.h"
-#include "buffer_sizes.h"
-#include "stats.h"
+#include "od_city.h"
+#include "kt_config.h"
+#include "kt_messages.h"
+#include "kt_buffer_sizes.h"
+#include "od_stats.h"
 
 
 // RMWs
@@ -108,11 +108,11 @@ typedef struct read_info{
   uint8_t rep_num; // replies num
   uint8_t times_seen_ts;
   bool seen_larger_ts; // used also for log numbers for rmw_acquires
-	uint8_t opcode;
+  uint8_t opcode;
   struct ts_tuple ts_to_read;
   struct key key;
-	// the value read locally, a greater value received or
-	// in case of a 2-round write, the value to be written
+  // the value read locally, a greater value received or
+  // in case of a 2-round write, the value to be written
   uint8_t value[VALUE_SIZE]; //
   uint8_t *value_to_read;
   bool fp_detected; //detected false positive
@@ -160,7 +160,7 @@ typedef struct rmw_rep_info {
   uint8_t rmw_id_commited;
   uint8_t log_too_small;
   uint8_t already_accepted;
-//  uint8_t ts_stale;
+  //  uint8_t ts_stale;
   uint8_t seen_higher_prop_acc; // Seen a higher prop or accept
   uint8_t log_too_high;
   uint8_t nacks;
@@ -186,7 +186,7 @@ typedef struct rmw_local_entry {
   bool must_release;
   bool rmw_is_successful; // was the RMW (if CAS) successful
   bool all_aboard;
-	bool avoid_val_in_com;
+  bool avoid_val_in_com;
   bool base_ts_found;
   uint8_t value_to_write[VALUE_SIZE];
   uint8_t value_to_read[VALUE_SIZE];
@@ -254,7 +254,7 @@ typedef struct trace_op trace_op_t;
 typedef struct kite_p_ops_debug kite_debug_t;
 
 typedef struct pending_ops {
-	write_fifo_t *w_fifo;
+  write_fifo_t *w_fifo;
   struct read_fifo *r_fifo;
   struct r_rep_fifo *r_rep_fifo;
   //ctx_ack_mes_t *ack_send_buf;
@@ -295,7 +295,7 @@ typedef struct pending_ops {
   // knowing the capacity of the read fifo is not enough to know if
   // you can add an element. Virtual read capacity captures this by
   // getting incremented by 2, every time an acquire is inserted
-	uint32_t virt_r_size;
+  uint32_t virt_r_size;
   uint32_t virt_w_size;  //
   per_write_meta_t *w_meta;
   uint32_t full_w_q_fifo;
@@ -306,9 +306,9 @@ typedef struct pending_ops {
 
 // A helper to debug sessions by remembering which write holds a given session
 struct session_dbg {
-	uint32_t dbg_cnt[SESSIONS_PER_THREAD];
-	//uint8_t is_release[SESSIONS_PER_THREAD];
-	//uint32_t request_id[SESSIONS_PER_THREAD];
+  uint32_t dbg_cnt[SESSIONS_PER_THREAD];
+  //uint8_t is_release[SESSIONS_PER_THREAD];
+  //uint32_t request_id[SESSIONS_PER_THREAD];
 };
 
 typedef struct kite_p_ops_debug {
@@ -431,12 +431,12 @@ struct a_bit_of_vec {
 };
 
 struct bit_vector {
-	// state_lock and state are used only for send_bits (i.e. by releases),
-	// because otherwise every release would have to check every bit
-	// acquires on the other hand need only check one bit
-	atomic_flag state_lock;
-	uint8_t state; // denotes if any bits are raised, to accelerate the common case
-	struct a_bit_of_vec bit_vec[MACHINE_NUM];
+  // state_lock and state are used only for send_bits (i.e. by releases),
+  // because otherwise every release would have to check every bit
+  // acquires on the other hand need only check one bit
+  atomic_flag state_lock;
+  uint8_t state; // denotes if any bits are raised, to accelerate the common case
+  struct a_bit_of_vec bit_vec[MACHINE_NUM];
 };
 
 // This bit vector shows failures that were identified locally
@@ -446,13 +446,13 @@ extern struct bit_vector send_bit_vector;
 
 //
 struct multiple_owner_bit {
-	atomic_flag lock;
-	uint8_t bit;
-	// this is not the actual sess_i of the owner, but a proxy of it
-	// it counts how many sessions own a bit from a given remote thread
-	uint32_t sess_num[WORKERS_PER_MACHINE];
-	//A bit can be owned only by the machine it belongs to
-	uint64_t owners[WORKERS_PER_MACHINE][SESSIONS_PER_THREAD];
+  atomic_flag lock;
+  uint8_t bit;
+  // this is not the actual sess_i of the owner, but a proxy of it
+  // it counts how many sessions own a bit from a given remote thread
+  uint32_t sess_num[WORKERS_PER_MACHINE];
+  //A bit can be owned only by the machine it belongs to
+  uint64_t owners[WORKERS_PER_MACHINE][SESSIONS_PER_THREAD];
 };
 
 

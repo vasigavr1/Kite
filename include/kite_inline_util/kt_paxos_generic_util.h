@@ -5,12 +5,12 @@
 #ifndef KITE_PAXOS_GENERIC_UTILITY_H
 #define KITE_PAXOS_GENERIC_UTILITY_H
 
-#include <config.h>
-#include "main.h"
-#include "kite_debug_util.h"
-#include "wrkr_side_calls.h"
-#include "kite_config_util.h"
-#include "reserve_stations_util.h"
+#include <kt_config.h>
+#include "kt_main.h"
+#include "kt_debug_util.h"
+#include "od_wrkr_side_calls.h"
+#include "kt_config_util.h"
+#include "kt_reserve_stations_util.h"
 
 
 

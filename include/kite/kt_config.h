@@ -15,8 +15,8 @@
 
 
 // Generic header files
-#include "top.h"
-#include "opcodes.h"
+#include "od_top.h"
+#include "kt_opcodes.h"
 
 void kite_stats(stats_ctx_t *ctx);
 
