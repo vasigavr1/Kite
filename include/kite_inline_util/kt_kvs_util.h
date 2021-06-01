@@ -544,7 +544,7 @@ static inline void KVS_out_of_epoch_writes(r_info_t *r_info, mica_op_t *kv_ptr,
 static inline void KVS_acquire_commits(r_info_t *r_info, mica_op_t *kv_ptr,
                                        uint16_t op_i, uint16_t t_id)
 {
- if (ENABLE_ASSERTIONS) assert(WRITE_RATIO > 0 || RMW_RATIO > 0);
+ if (ENABLE_ASSERTIONS) assert(write_ratio > 0 || RMW_RATIO > 0);
   if (DEBUG_RMW)
     my_printf(green, "Worker %u is handling a remote RMW commit on r_info %u, "
                 "rmw_l_id %u,log_no %u, version %u  \n",

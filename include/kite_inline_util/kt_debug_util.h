@@ -1155,7 +1155,7 @@ static inline void debug_set_version_of_op_to_one(trace_op_t *op, uint8_t opcode
   if (ENABLE_ASSERTIONS) {
     bool is_update = (opcode == (uint8_t) KVS_OP_PUT ||
                       opcode == (uint8_t) OP_RELEASE);
-    assert(WRITE_RATIO > 0 || is_update == 0);
+    assert(write_ratio > 0 || is_update == 0);
     if (is_update) assert(op->val_len > 0);
     op->ts.version = 1;
   }
