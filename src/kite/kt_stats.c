@@ -94,7 +94,7 @@ void kite_stats(stats_ctx_t *ctx)
   memcpy(prev_w_stats, curr_w_stats, WORKERS_PER_MACHINE * (sizeof(struct thread_stats)));
   memcpy(prev_c_stats, curr_c_stats, CLIENTS_PER_MACHINE * (sizeof(struct client_stats)));
   total_throughput = (all_wrkr_completed_reqs) / seconds;
-  double zk_write_ratio = all_wrkr_completed_zk_writes / (double) all_wrkr_completed_reqs;
+  double zk_WRITE_RATIO = all_wrkr_completed_zk_writes / (double) all_wrkr_completed_reqs;
   double sync_per = all_wrkr_sync_percentage / (double) all_wrkr_completed_reqs;
   double total_treiber_pushes = (all_client_microbench_pushes) / seconds;
   double total_treiber_pops = (all_client_microbench_pops) / seconds;
@@ -106,7 +106,7 @@ void kite_stats(stats_ctx_t *ctx)
               (total_cancelled_rmws / (double) total_rmws),
               per_s_all_aboard_rmws,
               total_treiber_pushes, total_treiber_pops,
-              zk_write_ratio, sync_per);
+              zk_WRITE_RATIO, sync_per);
   else {
     printf("---------------PRINT %d time elapsed %.2f---------------\n", print_count, seconds / MILLION);
     my_printf(green, "SYSTEM MIOPS: %.2f \n", total_throughput);
