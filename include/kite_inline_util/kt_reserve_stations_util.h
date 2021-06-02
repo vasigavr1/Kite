@@ -981,7 +981,6 @@ static inline bool fill_trace_op(context_t *ctx,
   // Create some back pressure from the buffers, since the sessions may never be stalled
   if (!EMULATE_ABD) {
     if (op->opcode == (uint8_t) KVS_OP_PUT) writes_num++;
-    //if (opcode == (uint8_t) OP_RELEASE) write_num+= 2;
     // A write (relaxed or release) may first trigger a read
     reads_num += op->opcode == (uint8_t) OP_ACQUIRE ? 2 : 1;
     if (p_ops->virt_w_size + writes_num >= MAX_ALLOWED_W_SIZE ||
@@ -996,7 +995,6 @@ static inline bool fill_trace_op(context_t *ctx,
   bool is_read = !is_update && !is_rmw;
 
   if (ENABLE_ASSERTIONS) assert(is_read || is_update || is_rmw);
-  //if (is_update || is_rmw) op->value_to_write = value_to_write;
   if (ENABLE_ASSERTIONS && !ENABLE_CLIENTS && op->opcode == FETCH_AND_ADD) {
     assert(is_rmw);
     assert(op->value_to_write == op->value);

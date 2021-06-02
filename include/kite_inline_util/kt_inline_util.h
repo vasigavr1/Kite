@@ -983,7 +983,7 @@ static void kite_main_loop(context_t *ctx)
 
     kite_checks_at_loop_start(ctx);
     poll_for_writes(ctx, W_QP_ID);
-    ctx_send_acks(ctx, ACK_QP_ID);
+    od_send_acks(ctx, ACK_QP_ID);
     poll_for_reads(ctx);
     send_r_reps(ctx);
     poll_for_read_replies(ctx);
