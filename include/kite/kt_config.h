@@ -38,7 +38,7 @@ void kite_stats(stats_ctx_t *ctx);
 #define ENABLE_CAS_CANCELLING 1
 #define ENABLE_ALL_ABOARD 1
 #define EMULATE_ABD 0
-#define TURN_OFF_KITE_ 1
+#define TURN_OFF_KITE_ 0
 #define TURN_OFF_KITE (EMULATE_ABD ? 1 : TURN_OFF_KITE_)
 #define ACCEPT_IS_RELEASE 0
 
