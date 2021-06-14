@@ -1675,18 +1675,19 @@ static inline void print_after_stealing_proposed(mica_op_t *kv_ptr,
 
 
 //-------------------------SENDING ACKS
-static inline void checks_stats_prints_when_sending_acks(ctx_ack_mes_t *acks,
-                                                         uint8_t m_i, uint16_t t_id)
+static inline void checks_stats_prints_when_sending_acks(context_t *ctx,
+                                                         ctx_ack_mes_t *acks,
+                                                         uint8_t m_i)
 {
   if (ENABLE_STAT_COUNTING) {
-    t_stats[t_id].per_worker_acks_sent[m_i] += acks[m_i].ack_num;
-    t_stats[t_id].per_worker_acks_mes_sent[m_i]++;
-    t_stats[t_id].acks_sent += acks[m_i].ack_num;
-    t_stats[t_id].acks_sent_mes_num++;
+    t_stats[ctx->t_id].per_worker_acks_sent[m_i] += acks[m_i].ack_num;
+    t_stats[ctx->t_id].per_worker_acks_mes_sent[m_i]++;
+    t_stats[ctx->t_id].acks_sent += acks[m_i].ack_num;
+    t_stats[ctx->t_id].acks_sent_mes_num++;
   }
   if (DEBUG_ACKS)
     my_printf(yellow, "Wrkr %d is sending an ack  to machine %u for lid %lu, credits %u and ack num %d and m id %d \n",
-              t_id, m_i, acks[m_i].l_id, acks[m_i].credits, acks[m_i].ack_num, acks[m_i].m_id);
+              ctx->t_id, m_i, acks[m_i].l_id, acks[m_i].credits, acks[m_i].ack_num, acks[m_i].m_id);
 
   if (ENABLE_ASSERTIONS) {
     assert(acks[m_i].credits <= acks[m_i].ack_num);

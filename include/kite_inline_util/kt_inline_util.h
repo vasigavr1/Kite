@@ -181,6 +181,7 @@ static inline void inspect_rmws(p_ops_t *p_ops, uint16_t t_id)
     }
 
     /* =============== BROADCAST COMMITS ======================== */
+    // TODO check performance when accessing loc_entry->state instead of state
     if (state == MUST_BCAST_COMMITS || state == MUST_BCAST_COMMITS_FROM_HELP) {
       loc_entry_t *entry_to_commit =
         state == MUST_BCAST_COMMITS ? loc_entry : loc_entry->help_loc_entry;
@@ -198,6 +199,7 @@ static inline void inspect_rmws(p_ops_t *p_ops, uint16_t t_id)
     }
 
     /* =============== RETRY ======================== */
+    // TODO check performance when accessing loc_entry->state instead of state
     if (state == RETRY_WITH_BIGGER_TS) {
       take_kv_ptr_with_higher_TS(p_ops, loc_entry, false, t_id);
       check_state_with_allowed_flags(5, (int) loc_entry->state, INVALID_RMW, PROPOSED,
