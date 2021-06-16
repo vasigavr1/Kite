@@ -85,7 +85,7 @@ static inline void batch_requests_to_KVS(context_t *ctx)
 
   p_ops->last_session = (uint16_t) working_session;
 
-  t_stats[ctx->t_id].cache_hits_per_thread += op_i;
+  t_stats[ctx->t_id].total_reqs += op_i;
   KVS_batch_op_trace(op_i, ctx->t_id, ops, resp, p_ops);
   //my_printf(cyan, "thread %d  adds %d/%d ops\n", t_id, op_i, MAX_OP_BATCH);
   for (uint16_t i = 0; i < op_i; i++) {
@@ -946,7 +946,7 @@ static inline void kite_checks_at_loop_start(context_t *ctx)
   //                    w_buf_pull_ptr, ack_buf_pull_ptr, r_rep_buf_pull_ptr, t_id);
 
   if (PUT_A_MACHINE_TO_SLEEP && (machine_id == MACHINE_THAT_SLEEPS) &&
-      (t_stats[WORKERS_PER_MACHINE -1].cache_hits_per_thread > 4000000) && (!p_ops->debug_loop->slept)) {
+      (t_stats[WORKERS_PER_MACHINE -1].total_reqs > 4000000) && (!p_ops->debug_loop->slept)) {
     uint seconds = 15;
     if (ctx->t_id == 0) my_printf(yellow, "Workers are going to sleep for %u secs\n", seconds);
     sleep(seconds); p_ops->debug_loop->slept = true;
@@ -969,7 +969,7 @@ static inline void kite_checks_at_loop_start(context_t *ctx)
 //                   "epoch_id %u, reqs %lld failed writes %lu, writes done %lu/%lu \n", t_id,
 //                 conf_bit_vec[MACHINE_THAT_SLEEPS].bit,
 //                 t_stats[t_id].quorum_reads, (uint16_t) epoch_id,
-//                 t_stats[t_id].cache_hits_per_thread, t_stats[t_id].failed_rem_writes,
+//                 t_stats[t_id].total_reqs, t_stats[t_id].failed_rem_writes,
 //                 t_stats[t_id].writes_sent, t_stats[t_id].writes_asked_by_clients);
 //        }
       p_ops->debug_loop->loop_counter = 0;

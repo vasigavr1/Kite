@@ -45,7 +45,7 @@ static inline void clean_up_on_KVS_miss(trace_op_t *op, p_ops_t *p_ops,
     p_ops->sess_info[session_id].stalled = false;
     p_ops->all_sessions_stalled = false;
     signal_completion_to_client(op->session_id, op->index_to_req_array, t_id);
-    t_stats[t_id].cache_hits_per_thread--;
+    t_stats[t_id].total_reqs--;
   }
 }
 

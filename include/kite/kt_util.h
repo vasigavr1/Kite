@@ -28,7 +28,7 @@ struct stats {
 	double failed_rem_write[WORKERS_PER_MACHINE];
   double quorum_reads_per_thread[WORKERS_PER_MACHINE];
 
-	double cache_hits_per_thread[WORKERS_PER_MACHINE];
+	double total_reqs[WORKERS_PER_MACHINE];
 
 	double writes_sent[WORKERS_PER_MACHINE];
 	double reads_sent[WORKERS_PER_MACHINE];

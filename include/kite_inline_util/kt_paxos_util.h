@@ -1171,7 +1171,7 @@ static inline void clean_up_after_inspecting_accept(p_ops_t *p_ops,
   zero_out_the_rmw_reply_loc_entry_metadata(loc_entry);
   // All-aboard
   if (ENABLE_ALL_ABOARD && loc_entry->all_aboard) {
-    if (ENABLE_STAT_COUNTING) {
+    if (ENABLE_STAT_COUNTING && loc_entry->state == MUST_BCAST_COMMITS) {
       t_stats[t_id].all_aboard_rmws++;
     }
     loc_entry->all_aboard = false;

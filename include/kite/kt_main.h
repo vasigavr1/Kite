@@ -337,37 +337,35 @@ typedef struct commit_info {
 } commit_info_t;
 
 typedef struct thread_stats {
-  long long cache_hits_per_thread;
+  uint64_t total_reqs;
 
   uint64_t reads_per_thread;
   uint64_t writes_per_thread;
   uint64_t acquires_per_thread;
   uint64_t releases_per_thread;
 
-
-
-  long long reads_sent;
-  long long acks_sent;
-  long long r_reps_sent;
+  uint64_t reads_sent;
+  uint64_t acks_sent;
+  uint64_t r_reps_sent;
   uint64_t writes_sent;
   uint64_t writes_asked_by_clients;
 
 
-  long long reads_sent_mes_num;
-  long long acks_sent_mes_num;
-  long long r_reps_sent_mes_num;
-  long long writes_sent_mes_num;
+  uint64_t reads_sent_mes_num;
+  uint64_t acks_sent_mes_num;
+  uint64_t r_reps_sent_mes_num;
+  uint64_t writes_sent_mes_num;
 
 
-  long long received_reads;
-  long long received_acks;
-  long long received_r_reps;
-  long long received_writes;
+  uint64_t received_reads;
+  uint64_t received_acks;
+  uint64_t received_r_reps;
+  uint64_t received_writes;
 
-  long long received_r_reps_mes_num;
-  long long received_acks_mes_num;
-  long long received_reads_mes_num;
-  long long received_writes_mes_num;
+  uint64_t received_r_reps_mes_num;
+  uint64_t received_acks_mes_num;
+  uint64_t received_reads_mes_num;
+  uint64_t received_writes_mes_num;
 
 
   uint64_t per_worker_acks_sent[MACHINE_NUM];
@@ -387,14 +385,12 @@ typedef struct thread_stats {
   uint64_t rectified_keys;
   uint64_t q_reads_with_low_epoch;
 
-  uint64_t proposes_sent; // number of broadcast
-  uint64_t accepts_sent; // number of broadcast
+  uint64_t proposes_sent;
+  uint64_t accepts_sent;
   uint64_t commits_sent;
   uint64_t rmws_completed;
   uint64_t cancelled_rmws;
   uint64_t all_aboard_rmws; // completed ones
-
-
 
   uint64_t stalled_ack;
   uint64_t stalled_r_rep;

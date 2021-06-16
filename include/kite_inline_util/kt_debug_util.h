@@ -289,11 +289,11 @@ static inline void debug_checks_when_inserting_a_write
     if (p_ops->virt_w_size > MAX_ALLOWED_W_SIZE  || p_ops->w_size >= MAX_ALLOWED_W_SIZE)
       my_printf(red, "Worker %u w_state %d at w_ptr %u, kvs hits %lu, w_size/virt_w_size %u/%u, source %u\n",
                 t_id, p_ops->w_meta[w_ptr].w_state, w_ptr,
-                t_stats[t_id].cache_hits_per_thread, p_ops->w_size, p_ops->virt_w_size, source);
+                t_stats[t_id].total_reqs, p_ops->w_size, p_ops->virt_w_size, source);
     if (unlikely(p_ops->w_meta[w_ptr].w_state != INVALID))
       my_printf(red, "Worker %u w_state %d at w_ptr %u, kvs hits %lu, w_size %u \n",
                 t_id, p_ops->w_meta[w_ptr].w_state, w_ptr,
-                t_stats[t_id].cache_hits_per_thread, p_ops->w_size);
+                t_stats[t_id].total_reqs, p_ops->w_size);
     //					printf("Sent %d, Valid %d, Ready %d \n", SENT, VALID, READY);
     assert(p_ops->w_meta[w_ptr].w_state == INVALID);
   }
@@ -352,7 +352,7 @@ static inline void print_thread_stats(uint16_t t_id) {
 
   my_printf(yellow, "Cache hits: %u \nReads: %lu \nWrites: %lu \nReleases: %lu \nAcquires: %lu \nQ Reads: %lu "
               "\nRectified keys %lu\n",
-            t_stats[t_id].cache_hits_per_thread, t_stats[t_id].reads_per_thread,
+            t_stats[t_id].total_reqs, t_stats[t_id].reads_per_thread,
             t_stats[t_id].writes_per_thread, t_stats[t_id].releases_per_thread,
             t_stats[t_id].acquires_per_thread, t_stats[t_id].quorum_reads,
             t_stats[t_id].rectified_keys);
@@ -378,7 +378,7 @@ static inline void print_verbouse_debug_info(p_ops_t *p_ops, uint16_t t_id, uint
   my_printf(green, "R_size: %u \nr_push_ptr %u \nr_pull_ptr %u\n", p_ops->r_size, p_ops->r_push_ptr, p_ops->r_pull_ptr);
 
   my_printf(yellow, "Cache hits: %u \nReads: %u \nWrites: %u \nReleases: %u \nAcquires: %u \n",
-            t_stats[t_id].cache_hits_per_thread, t_stats[t_id].reads_per_thread,
+            t_stats[t_id].total_reqs, t_stats[t_id].reads_per_thread,
             t_stats[t_id].writes_per_thread, t_stats[t_id].releases_per_thread,
             t_stats[t_id].acquires_per_thread);
   print_for_debug = false;
@@ -733,7 +733,7 @@ static inline void check_read_state_and_key(p_ops_t *p_ops, uint32_t r_ptr, uint
     if (p_ops->r_state[r_ptr] != INVALID)
       my_printf(red, "Worker %u r_state %d at r_ptr %u, kvs hits %lu, r_size %u \n",
                 t_id, p_ops->r_state[r_ptr], r_ptr,
-                t_stats[t_id].cache_hits_per_thread, p_ops->r_size);
+                t_stats[t_id].total_reqs, p_ops->r_size);
     //printf("Sent %d, Valid %d, Ready %d \n", SENT, VALID, READY);
     assert(p_ops->r_state[r_ptr] == INVALID);
     //struct read *read = &r_mes[r_mes_ptr].read[inside_r_ptr];
