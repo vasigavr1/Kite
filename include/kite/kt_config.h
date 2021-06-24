@@ -22,7 +22,7 @@ void kite_stats(stats_ctx_t *ctx);
 
 
 // CORE CONFIGURATION
-#define R_CREDITS 3//
+#define R_CREDITS 8//
 #define W_CREDITS 8
 #define MAX_READ_SIZE 730 //300 in terms of bytes for Reads/Acquires/RMW-Acquires/Proposes
 #define MAX_WRITE_SIZE 800 // only writes 400 -- only rmws 1200 in terms of bytes for Writes/Releases/Accepts/Commits
@@ -35,7 +35,7 @@ void kite_stats(stats_ctx_t *ctx);
 // Important Knobs
 
 #define ENABLE_COMMITS_WITH_NO_VAL 1
-#define ENABLE_CAS_CANCELLING 1
+#define ENABLE_CAS_CANCELLING 0
 #define ENABLE_ALL_ABOARD 1
 #define EMULATE_ABD 0
 #define TURN_OFF_KITE_ 0

@@ -1451,7 +1451,6 @@ static inline void insert_rmw(p_ops_t *p_ops, trace_op_t *op,
   uint16_t session_id = op->session_id;
   loc_entry_t *loc_entry = &p_ops->prop_info->entry[session_id];
   if (loc_entry->state == CAS_FAILED) {
-    //printf("Wrkr%u, sess %u, entry %u rmw_failing \n", t_id, session_id, resp->rmw_entry);
     signal_completion_to_client(session_id, op->index_to_req_array, t_id);
     p_ops->sess_info[session_id].stalled = false;
     p_ops->all_sessions_stalled = false;

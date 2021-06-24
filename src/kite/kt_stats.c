@@ -53,10 +53,13 @@ void kite_stats(stats_ctx_t *ctx) {
   if (SHOW_AGGREGATE_STATS) {
     t_stats_t *all_aggreg = ctx->all_aggreg;
 
-    my_printf(green, "%u %.2f, all-aboard: %.2f, canc: %.2f,  \n",
+    my_printf(green, "%u %.2f, all-aboard: %.2f, TOT/AB: %lu/%lu, props %lu, canc %lu, canc: %.2f\%,  \n",
               ctx->print_count, per_sec(ctx, total_reqs),
               per_sec(ctx, all_aggreg->all_aboard_rmws),
-              (double) all_aggreg->cancelled_rmws /
+              total_reqs, all_aggreg->all_aboard_rmws,
+              all_aggreg->proposes_sent,
+              all_aggreg->cancelled_rmws,
+              (double) 100 * all_aggreg->cancelled_rmws /
               (double) all_aggreg->rmws_completed);
 
   }
