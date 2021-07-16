@@ -408,7 +408,7 @@ static inline void free_kv_ptr_if_rmw_failed(loc_entry_t *loc_entry,
 }
 
 
-static inline void bookkeeping_after_gathering_accept_acks(loc_entry_t *loc_entry, uint16_t t_id)
+static inline void go_to_bcast_state_after_gathering_accept_acks(loc_entry_t *loc_entry, uint16_t t_id)
 {
 
   if (ENABLE_ASSERTIONS) {

@@ -381,7 +381,6 @@ static inline void print_verbouse_debug_info(p_ops_t *p_ops, uint16_t t_id, uint
             t_stats[t_id].total_reqs, t_stats[t_id].reads_per_thread,
             t_stats[t_id].writes_per_thread, t_stats[t_id].releases_per_thread,
             t_stats[t_id].acquires_per_thread);
-  print_for_debug = false;
 }
 
 
@@ -947,47 +946,6 @@ static inline void check_for_same_ts_as_already_proposed(mica_op_t *kv_ptr, stru
   }
 }
 
-static inline void verify_paxos(loc_entry_t *loc_entry, uint16_t t_id)
-{
-  if (VERIFY_PAXOS && is_global_ses_id_local((uint32_t)loc_entry->rmw_id.id % GLOBAL_SESSION_NUM, t_id)) {
-    //if (committed_log_no != *(uint32_t *)loc_entry->value_to_write)
-    //  red_printf ("vale_to write/log no %u/%u",
-    //             *(uint32_t *)loc_entry->value_to_write, committed_log_no );
-    uint64_t val = *(uint64_t *)loc_entry->value_to_read;
-    //assert(val == loc_entry->accepted_log_no - 1);
-    fprintf(rmw_verify_fp[t_id], "%u %lu %u \n", loc_entry->key.bkt, val, loc_entry->accepted_log_no);
-  }
-}
-
-
-static inline void check_last_registered_rmw_id(loc_entry_t *loc_entry,
-                                                mica_op_t *kv_ptr, uint8_t helping_flag, uint16_t t_id)
-{
-//  if (ENABLE_ASSERTIONS) {
-//    if (kv_ptr->last_registered_log_no != loc_entry->log_no - 1) {
-//      my_printf(red, "Last registered/last-committed/working  %u/%u/%u, key %u, helping flag %u \n",
-//                kv_ptr->last_registered_log_no, kv_ptr->last_committed_log_no,
-//                loc_entry->log_no, loc_entry->key.bkt, helping_flag);
-//      sleep(2);
-//      assert(false);
-//    }
-//    if (loc_entry->log_no == kv_ptr->last_committed_log_no + 1) {
-//      if (!rmw_ids_are_equal(&kv_ptr->last_registered_rmw_id, &kv_ptr->last_committed_rmw_id)) {
-//        my_printf(red,
-//                  "Wrkr %u, filling help loc entry last registered rmw id, help log no/ kv_ptr last committed log no %u/%u,"
-//                    "glob rmw ids: last committed/last registered %lu/%lu \n", t_id,
-//                  loc_entry->log_no, kv_ptr->last_committed_log_no,
-//                  kv_ptr->last_registered_rmw_id.id, kv_ptr->last_committed_rmw_id.id);
-//      }
-//      assert(rmw_ids_are_equal(&kv_ptr->last_registered_rmw_id, &kv_ptr->last_committed_rmw_id));
-//    }
-//      // If I am helping log_no X, without having committed log_no X-1, the i better have the correct last registered RMW-id
-//    else if (loc_entry->log_no > kv_ptr->last_committed_log_no + 1) {
-//      assert(!rmw_ids_are_equal(&kv_ptr->last_registered_rmw_id, &kv_ptr->last_committed_rmw_id));
-//    } else
-//      assert(false);
-//  }
-}
 
 
 static inline void check_that_the_rmw_ids_match(mica_op_t *kv_ptr, uint64_t rmw_id,

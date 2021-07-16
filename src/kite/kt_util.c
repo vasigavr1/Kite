@@ -7,7 +7,6 @@ struct bit_vector send_bit_vector;
 struct multiple_owner_bit conf_bit_vec[MACHINE_NUM];
 
 atomic_uint_fast64_t epoch_id;
-atomic_bool print_for_debug;
 const uint16_t machine_bit_id[SEND_CONF_VEC_SIZE * 8] = {1, 2, 4, 8, 16, 32, 64, 128, 256, 512,
                                                          1024, 2048, 4096, 8192, 16384, 32768};
 atomic_uint_fast64_t committed_glob_sess_rmw_id[GLOBAL_SESSION_NUM];
@@ -281,6 +280,20 @@ kite_debug_t *init_debug_loop_struct()
   }
   return loop_dbg;
 }
+
+
+void open_rmw_log_files(uint16_t t_id)
+{
+  if (VERIFY_PAXOS || PRINT_LOGS || COMMIT_LOGS) {
+    char fp_name[40];
+    my_printf(green, "WILL PRINT LOGS IN THIS RUN \n");
+    sprintf(fp_name, "../kite/src/PaxosVerifier/thread%d.out", t_id);
+    rmw_verify_fp[t_id] = fopen(fp_name, "w+");
+    assert(rmw_verify_fp[t_id] != NULL);
+  }
+}
+
+
 // Initialize the pending ops struct
 p_ops_t* set_up_pending_ops(context_t *ctx)
 {
@@ -406,7 +419,9 @@ p_ops_t* set_up_pending_ops(context_t *ctx)
     p_ops->trace = trace_init(ctx->t_id);
 
   p_ops->debug_loop = init_debug_loop_struct();
- return p_ops;
+
+  open_rmw_log_files(ctx->t_id);
+  return p_ops;
 }
 
 

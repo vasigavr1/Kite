@@ -1402,7 +1402,7 @@ static inline void inspect_accepts(p_ops_t *p_ops,
   }
     // ACK QUORUM
   else if (rep_info->acks >= remote_quorum) {
-    bookkeeping_after_gathering_accept_acks(loc_entry, t_id);
+    go_to_bcast_state_after_gathering_accept_acks(loc_entry, t_id);
     loc_entry->state = (uint8_t) (loc_entry->helping_flag == HELPING ?
                                   MUST_BCAST_COMMITS_FROM_HELP : MUST_BCAST_COMMITS);
   }

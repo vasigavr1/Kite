@@ -952,9 +952,6 @@ static inline void kite_checks_at_loop_start(context_t *ctx)
     sleep(seconds); p_ops->debug_loop->slept = true;
     if (ctx->t_id == 0) my_printf(green, "Worker %u is back\n", ctx->t_id);
   }
-  if (ENABLE_INFO_DUMP_ON_STALL && print_for_debug) {
-    //print_verbouse_debug_info(p_ops, t_id, credits);
-  }
   if (ENABLE_ASSERTIONS) {
     if (ENABLE_ASSERTIONS && ctx->t_id == 0)  time_approx++;
     p_ops->debug_loop->loop_counter++;
