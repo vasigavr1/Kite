@@ -868,7 +868,6 @@ static inline void check_sum_of_reps(loc_entry_t *loc_entry)
 }
 
 
-
 static inline void check_loc_entry_metadata_is_reset(loc_entry_t* loc_entry,
                                                      const char *message, uint16_t t_id)
 {
@@ -1542,6 +1541,19 @@ static inline void logging_proposed_but_not_locally_acked(mica_op_t *kv_ptr,
             loc_entry->key.bkt, loc_entry->log_no, help_loc_entry->rmw_id.id,
             help_loc_entry->new_ts.version, help_loc_entry->new_ts.m_id, loc_entry->rmw_id.id,
             loc_entry->new_ts.version, loc_entry->new_ts.m_id);
+}
+
+
+static inline void verify_paxos(loc_entry_t *loc_entry, uint16_t t_id)
+{
+  if (VERIFY_PAXOS && is_global_ses_id_local((uint32_t)loc_entry->rmw_id.id % GLOBAL_SESSION_NUM, t_id)) {
+    //if (committed_log_no != *(uint32_t *)loc_entry->value_to_write)
+    //  red_printf ("vale_to write/log no %u/%u",
+    //             *(uint32_t *)loc_entry->value_to_write, committed_log_no );
+    uint64_t val = *(uint64_t *)loc_entry->value_to_read;
+    //assert(val == loc_entry->accepted_log_no - 1);
+    fprintf(rmw_verify_fp[t_id], "%u %lu %u \n", loc_entry->key.bkt, val, loc_entry->accepted_log_no);
+  }
 }
 
 
