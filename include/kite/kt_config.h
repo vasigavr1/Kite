@@ -50,7 +50,7 @@ void kite_stats(stats_ctx_t *ctx);
 
 
 
-#define VERIFY_PAXOS 1
+#define VERIFY_PAXOS 0
 #define PRINT_LOGS 0
 #define COMMIT_LOGS 0
 #define DUMP_STATS_2_FILE 0
